@@ -7,7 +7,7 @@
 | Nama                    | NIM       | Peran              | Deskripsi Tugas                                                                    |
 | ----------------------- | --------- | ------------------ | ---------------------------------------------------------------------------------- |
 | **Cahya Galur Permana** | 10221057  | Backend Developer  | Pengembangan API dengan Flask & PostgreSQL, serta logika sistem booking.           |
-| **Sheva Aryo Susanto**  | 102201088 | DevOps Engineer    | Containerisasi (Docker), CI/CD pipeline, deployment, monitoring & infrastruktur.   |
+| **Sheva Aryo Susanto**  | 10221088 | DevOps Engineer    | Containerisasi (Docker), CI/CD pipeline, deployment, monitoring & infrastruktur.   |
 | **Rifki Anashirul**     | 10221044  | Frontend Developer | UI/UX dengan React, integrasi API, dan antarmuka yang responsif dan user-friendly. |
 
 ---
