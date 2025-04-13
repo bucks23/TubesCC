@@ -9,10 +9,11 @@ Aplikasi booking hotel berbasis website yang dirancang untuk mengelola proses re
 ```
 /tubesCC
 ├── backend/
-├── frontend/
 ├── db/
+├── frontend/
 ├── laporan/
     └── images
     └── week9.md
+├── .gitignore
 ├── README.md
 ```
