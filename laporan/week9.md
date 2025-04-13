@@ -6,7 +6,7 @@
 
 | Nama | NIM |Peran |Deskripsi Tugas |
 |------|-----|------|----------------|
-| **Cahya Galur Permana** | 10221057   | Backend Developer    | Pengembangan REST API dengan Flask & PostgreSQL, serta logika sistem booking.   |
+| **Cahya Galur Permana** | 10221057   | Backend Developer    | Pengembangan API dengan Flask & PostgreSQL, serta logika sistem booking.   |
 | **Sheva Aryo Susanto**  | 102201088  | DevOps Engineer      | Containerisasi (Docker), CI/CD pipeline, deployment, monitoring & infrastruktur. |
 | **Rifki Anashirul**     | 10221044   | Frontend Developer   | UI/UX dengan React, integrasi API, dan antarmuka yang responsif dan user-friendly. |
 
@@ -48,7 +48,7 @@ Aplikasi booking hotel berbasis website yang dirancang untuk mengelola proses re
 | Pekan | Fokus Utama                      | Tugas                                                                 | Deliverable                                                                                             |
 |-------|----------------------------------|------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
 | 9     | 🛠️ Perancangan Proyek             | Memilih tema, arsitektur microservices, wireframe, setup GitHub       | Proposal proyek (Markdown), diagram arsitektur, wireframe, struktur repo awal + README.md              |
-| 10    | ⚙️ Pengembangan Backend           | 2 layanan Flask, REST API, database schema, Docker backend            | Kode backend, dokumentasi API, file SQL, Dockerfile, screenshot proses + penjelasan                     |
+| 10    | ⚙️ Pengembangan Backend           | 2 layanan Flask, API, database schema, Docker backend            | Kode backend, dokumentasi API, file SQL, Dockerfile, screenshot proses + penjelasan                     |
 | 11    | 💻 Pengembangan Frontend         | UI React+Vite, integrasi API, Docker frontend                         | Kode frontend, Dockerfile frontend, screenshot UI + penjelasan fitur & komponen                         |
 | 12    | 🔗 Integrasi & Docker Compose    | Integrasi layanan, komunikasi antar service, volume persistence       | File Docker Compose, dokumentasi integrasi, screenshot proses + penjelasan                              |
 | 13    | 🚀 CI/CD & Cloud Deployment      | GitHub Actions, deployment cloud, konfigurasi secrets/env             | File workflow GitHub Actions, dokumentasi deployment, screenshot proses, Live URL                      |
