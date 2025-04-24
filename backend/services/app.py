@@ -2,9 +2,11 @@ from flask import Flask, jsonify
 from services.users import user_bp
 from services.rooms import room_bp
 from services.conn import get_db_connection
+from flask_cors import CORS
 import os
 
 app = Flask(__name__)
+CORS(app)
 
 # Register blueprint routes
 app.register_blueprint(user_bp, url_prefix='/api/users')
