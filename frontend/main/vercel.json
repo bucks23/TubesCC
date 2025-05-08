@@ -1,34 +1,33 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "MultipleFiles/app.py",
-        "use": "@vercel/python"
-      }
-    ],
-    "routes": [
-      {
-        "src": "/api/users/(.*)",
-        "dest": "MultipleFiles/users.py"
-      },
-      {
-        "src": "/api/rooms/(.*)",
-        "dest": "MultipleFiles/rooms.py"
-      },
-      {
-        "src": "/health",
-        "dest": "MultipleFiles/app.py"
-      },
-      {
-        "src": "/(.*)",
-        "dest": "MultipleFiles/app.py"
-      }
-    ],
-    "env": {
-      "DB_HOST": "db",
-      "DB_NAME": "hotel_cc",
-      "DB_USER": "hotel_cc",
-      "DB_PASSWORD": "password"
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/services/app.py",
+      "use": "@vercel/python"
     }
+  ],
+  "routes": [
+    {
+      "src": "/api/users/(.*)",
+      "dest": "backend/services/users.py"
+    },
+    {
+      "src": "/api/rooms/(.*)",
+      "dest": "backend/services/rooms.py"
+    },
+    {
+      "src": "/health",
+      "dest": "backend/services/app.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "backend/services/app.py"
+    }
+  ],
+  "env": {
+    "DB_HOST": "db",
+    "DB_NAME": "hotel_cc",
+    "DB_USER": "hotel_cc",
+    "DB_PASSWORD": "password"
   }
-  
+}
