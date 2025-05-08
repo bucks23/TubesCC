@@ -1,0 +1,34 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "MultipleFiles/app.py",
+        "use": "@vercel/python"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/api/users/(.*)",
+        "dest": "MultipleFiles/users.py"
+      },
+      {
+        "src": "/api/rooms/(.*)",
+        "dest": "MultipleFiles/rooms.py"
+      },
+      {
+        "src": "/health",
+        "dest": "MultipleFiles/app.py"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "MultipleFiles/app.py"
+      }
+    ],
+    "env": {
+      "DB_HOST": "db",
+      "DB_NAME": "hotel_cc",
+      "DB_USER": "hotel_cc",
+      "DB_PASSWORD": "password"
+    }
+  }
+  
