@@ -2,32 +2,17 @@
   "version": 2,
   "builds": [
     {
-      "src": "app.py",
-      "use": "@vercel/python"
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "frontend/main/dist"
+      }
     }
   ],
   "routes": [
     {
-      "src": "/api/users/(.*)",
-      "dest": "users.py"
-    },
-    {
-      "src": "/api/rooms/(.*)",
-      "dest": "rooms.py"
-    },
-    {
-      "src": "/health",
-      "dest": "app.py"
-    },
-    {
       "src": "/(.*)",
-      "dest": "app.py"
+      "dest": "/frontend/main/dist/index.html"
     }
-  ],
-  "env": {
-    "DB_HOST": "db",
-    "DB_NAME": "hotel_cc",
-    "DB_USER": "hotel_cc",
-    "DB_PASSWORD": "password"
-  }
+  ]
 }
