@@ -1,23 +1,19 @@
 # Base image Node.js versi 16 Alpine
 FROM node:20 AS builder
 
-# Set build arguments (opsional, bisa diubah saat build)
-ARG NODE_ENV=production
-ENV NODE_ENV=${NODE_ENV}
-
 WORKDIR /app
 
 # Copy package.json dan package-lock.json
 COPY package*.json ./
 
-# Install dependencies berdasarkan NODE_ENV
+# Install all dependencies including devDependencies
 RUN npm install --force
 
 # Copy seluruh source code
 COPY . .
 
 # Build untuk production menggunakan Vite
-RUN npm run build
+RUN NODE_ENV=production npm run build
 
 # Gunakan Nginx untuk serve static file
 FROM nginx:stable-alpine
