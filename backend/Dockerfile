@@ -9,7 +9,8 @@ WORKDIR /app
 COPY requirements_prom.txt requirements.txt
 
 # Install package yang dibutuhkan dengan pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && pip install prometheus_client
+
 
 # Copy semua file di direktori saat ini ke dalam container
 COPY . .
