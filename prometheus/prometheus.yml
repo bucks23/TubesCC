@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'hotel-cc-pacific'
+    static_configs:
+      - targets: ['hotel-cc-pacific.up.railway.app']
+
+  - job_name: 'tubescc-production'
+    static_configs:
+      - targets: ['tubescc-production.up.railway.app']
