@@ -1,4 +1,4 @@
-# Base image Node.js versi 16 Alpine
+# Base image Node.js versi 20 Alpine
 FROM node:20 AS builder
 
 WORKDIR /app
@@ -6,8 +6,11 @@ WORKDIR /app
 # Copy package.json dan package-lock.json
 COPY package*.json ./
 
-# Install all dependencies including devDependencies
+# Install dependencies termasuk devDependencies
 RUN npm install --force
+
+# Install prom-client secara terpisah jika belum ada dalam package.json
+RUN npm install prom-client
 
 # Copy seluruh source code
 COPY . .
