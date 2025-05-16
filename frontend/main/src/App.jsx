@@ -5,6 +5,7 @@ import Reservation from "./components/Reservation";
 import Contact from "./components/Contact";
 import Register from "./components/Register";
 import AdminRoom from "./components/Admin/Room";
+import PrometheusMetrics from "./components/PrometheusMetrics";
 
 const App = () => {
   return (
@@ -17,6 +18,8 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         {/* Admin */}
         <Route path="/admin/room" element={<AdminRoom />} />
+        {/* Prometheus Metrics */}
+        <Route path="/metrics" element={<PrometheusMetrics />} />
       </Routes>
     </BrowserRouter>
   );
