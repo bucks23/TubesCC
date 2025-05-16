@@ -5,7 +5,7 @@ const PrometheusMetrics = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch("/api/metrics")
+    fetch("/metrics")
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");
