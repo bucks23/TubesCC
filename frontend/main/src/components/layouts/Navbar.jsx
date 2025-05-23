@@ -1,8 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -12,6 +15,107 @@ function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Check authentication status on component mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/auth/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      } else {
+        // Token might be expired or invalid
+        localStorage.removeItem('access_token');
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      localStorage.removeItem('access_token');
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    setUser(null);
+    navigate('/');
+  };
+
+  const renderAuthLinks = () => {
+    if (isLoading) {
+      return (
+        <li>
+          <span className="loading loading-spinner loading-sm"></span>
+        </li>
+      );
+    }
+
+    if (user) {
+      return (
+        <li className="dropdown dropdown-end">
+          <div tabIndex={0} role="button" className="btn btn-ghost">
+            <span className="mr-1">👤</span>
+            {user.username}
+            <svg className="fill-current w-4 h-4 ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+            </svg>
+          </div>
+          <ul tabIndex={0} className={`dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 ${scrolled ? 'text-black' : 'text-black'}`}>
+            <li>
+              <Link to="/profile" className="flex items-center">
+                <span className="mr-2">👤</span>
+                Profile
+              </Link>
+            </li>
+            {user.role === 'admin' && (
+              <li>
+                <Link to="/admin" className="flex items-center">
+                  <span className="mr-2">⚙️</span>
+                  Admin Panel
+                </Link>
+              </li>
+            )}
+            <li>
+              <button onClick={handleLogout} className="flex items-center w-full text-left">
+                <span className="mr-2">🚪</span>
+                Logout
+              </button>
+            </li>
+          </ul>
+        </li>
+      );
+    }
+
+    return (
+      <>
+        <li>
+          <Link to="/register">Register</Link>
+        </li>
+        <li>
+          <Link to="/login">Login</Link>
+        </li>
+      </>
+    );
+  };
 
   return (
     <div
@@ -47,9 +151,7 @@ function Navbar() {
           <li>
             <Link to="/contact">Contact</Link>
           </li>
-          <li>
-            <Link to="/register">Register</Link>
-          </li>
+          {renderAuthLinks()}
         </ul>
       </div>
     </div>
