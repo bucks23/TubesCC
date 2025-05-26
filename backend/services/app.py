@@ -3,6 +3,8 @@ from flask import Flask, jsonify, Response
 from flask_jwt_extended import JWTManager
 from services.auth import auth_bp
 from services.rooms import room_bp
+from services.booking import booking_bp
+from services.payment import payment_bp
 from services.conn import get_db_connection
 from datetime import timedelta
 from flask_cors import CORS
@@ -23,6 +25,8 @@ CORS(app)
 # app.register_blueprint(user_bp, url_prefix='/api/users')
 app.register_blueprint(room_bp, url_prefix='/api/rooms')
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(booking_bp, url_prefix='/api/booking')
+app.register_blueprint(payment_bp, url_prefix='/api/payment')
 
 # JWT Error handlers
 @jwt.expired_token_loader
@@ -65,6 +69,17 @@ def health_check():
 @app.route('/metrics')
 def metrics():
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+@app.route('/debug/routes')
+def list_routes():
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            'endpoint': rule.endpoint,
+            'methods': list(rule.methods),
+            'rule': rule.rule
+        })
+    return jsonify(routes)
 
 # Jalankan aplikasi
 if __name__ == '__main__':
