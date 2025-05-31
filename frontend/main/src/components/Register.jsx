@@ -1,37 +1,32 @@
 import { useState } from "react";
-import { Link } from "react-router-dom"; // Add this import
+import { Link } from "react-router-dom";
 import Navbar from "./layouts/Navbar";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { FiUser, FiLock } from "react-icons/fi";
 
 function Register() {
   const [password, setPassword] = useState("");
   const [userName, setUserName] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState(""); // "register" or "userlist"
-  const [userList, setUserList] = useState([]);
+  const [modalType, setModalType] = useState("");
 
   const handleRegister = async () => {
-    // Basic validation
     if (!userName.trim() || !password.trim()) {
-      setError("Username dan password harus diisi");
+      toast.error("Username dan password harus diisi");
       return;
     }
-
     if (userName.length < 3) {
-      setError("Username minimal 3 karakter");
+      toast.error("Username minimal 3 karakter");
       return;
     }
-
     if (password.length < 6) {
-      setError("Password minimal 6 karakter");
+      toast.error("Password minimal 6 karakter");
       return;
     }
 
     setLoading(true);
-    setError("");
-    setSuccess("");
 
     try {
       const response = await fetch("http://localhost:5000/api/auth/register", {
@@ -40,75 +35,33 @@ function Register() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          username: userName.trim(), 
+        body: JSON.stringify({
+          username: userName.trim(),
           password: password.trim(),
-          role: "guest" // Default role, you can make this configurable
+          role: "guest",
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || `Registration failed: ${response.status}`);
+        throw new Error(
+          data.error || `Registration failed: ${response.status}`
+        );
       }
 
-      // Store the JWT token if needed
       if (data.access_token) {
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("user", JSON.stringify(data.user));
       }
 
-      setSuccess(`User ${data.user.username} berhasil terdaftar!`);
+      toast.success(`User ${data.user.username} berhasil terdaftar!`);
       setModalType("register");
       setShowModal(true);
-      
-      // Clear form
       setUserName("");
       setPassword("");
-
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCheckUser = async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      // Get access token from localStorage
-      const token = localStorage.getItem('access_token');
-      
-      if (!token) {
-        throw new Error("Token tidak ditemukan. Silakan login terlebih dahulu.");
-      }
-
-      const response = await fetch("http://localhost:5000/api/auth/admin/users", {
-        method: "GET",
-        mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 403) {
-          throw new Error("Anda tidak memiliki izin untuk melihat daftar user");
-        }
-        throw new Error(data.error || "Gagal mengambil data user");
-      }
-
-      setUserList(data.users);
-      setModalType("userlist");
-      setShowModal(true);
-    } catch (error) {
-      setError(error.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -117,151 +70,84 @@ function Register() {
   const closeModal = () => {
     setShowModal(false);
     setModalType("");
-    setError("");
-    setSuccess("");
   };
 
   return (
     <>
       <Navbar />
+      <ToastContainer />
       <div
         className="hero min-h-screen bg-cover bg-center"
         style={{ backgroundImage: "url('/img/login.jpg')" }}
       >
-        <div className="hero-content flex flex-col items-center justify-center text-center mt-10">
-          <div className="card bg-base-100 w-full max-w-lg shadow-2xl m-10 p-8 rounded-lg">
-            <div className="card-header p-5">
-              <h1 className="text-xl font-bold">Register</h1>
-              <p className="text-sm text-gray-500">
-                Silahkan register untuk melanjutkan
-              </p>
-            </div>
-            <div className="card-body justify-start">
-              <fieldset className="space-y-4">
-                <div>
-                  <label className="block text-left text-sm font-medium text-gray-700">
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered w-full"
-                    placeholder="Username (minimal 3 karakter)"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    disabled={loading}
-                  />
-                </div>
-                <div>
-                  <label className="block text-left text-sm font-medium text-gray-700">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    className="input input-bordered w-full"
-                    placeholder="Password (minimal 6 karakter)"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading}
-                  />
-                </div>
-                <button
-                  className={`btn btn-neutral w-full mt-4 ${loading ? 'loading' : ''}`}
-                  onClick={handleRegister}
+        <div className="hero-overlay bg-black/60 backdrop-blur-sm"></div>
+        <div className="hero-content text-center text-neutral-content w-full flex flex-col items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white/10 p-8 rounded-2xl shadow-xl backdrop-blur-md border border-white/20">
+            <h1 className="text-3xl font-semibold mb-2 text-white tracking-wider">
+              Buat Akun
+            </h1>
+            <p className="mb-6 text-white/70">
+              Silahkan isi data untuk membuat akun baru
+            </p>
+
+            <div className="space-y-5">
+              <div className="flex items-center bg-white/10 rounded-lg px-3 py-2">
+                <FiUser className="text-white/70 mr-2" />
+                <input
+                  type="text"
+                  className="bg-transparent w-full text-white placeholder-white/70 outline-none"
+                  placeholder="Username"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
                   disabled={loading}
-                >
-                  {loading ? 'Loading...' : 'Register'}
-                </button>
-                <div className="text-center text-sm text-gray-500">atau, sudah punya akun?</div>
-                {/* Fixed: Replace button with Link */}
-                <Link 
-                  to="/login" 
-                  className={`btn btn-outline w-full inline-flex items-center justify-center ${loading ? 'btn-disabled' : ''}`}
-                  style={{ 
-                    pointerEvents: loading ? 'none' : 'auto',
-                    textDecoration: 'none' 
-                  }}
-                >
-                  Login
-                </Link>
-              </fieldset>
+                />
+              </div>
 
-              {error && (
-                <div className="alert alert-error mt-4">
-                  <span>Error: {error?.message || error}</span>
-                  {error?.errors && (
-                    <ul className="list-disc pl-4 mt-2">
-                      {error.errors.map((err) => (
-                        <li key={err.param}>{err.msg}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
+              <div className="flex items-center bg-white/10 rounded-lg px-3 py-2">
+                <FiLock className="text-white/70 mr-2" />
+                <input
+                  type="password"
+                  className="bg-transparent w-full text-white placeholder-white/70 outline-none"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <button
+                className={`btn btn-outline w-full py-3 bg-indigo-700 hover:bg-indigo-800 text-white font-semibold rounded-lg transition ${
+                  loading ? "loading" : ""
+                }`}
+                onClick={handleRegister}
+                disabled={loading}
+              >
+                {loading ? "Loading..." : "Register"}
+              </button>
 
-              {success && (
-                <div className="alert alert-success mt-4">
-                  <span>{success}</span>
-                </div>
-              )}
+              <div className="text-sm text-white/70">Sudah punya akun?</div>
+              <Link
+                to="/login"
+                className="btn btn-outline w-full py-3 bg-gray-600 hover:bg-indigo-800 text-white font-semibold rounded-lg transition"
+              >
+                Login
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Register Success Modal */}
+      {/* Modal Register Success */}
       {showModal && modalType === "register" && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <div className="text-green-500 text-4xl mb-4">✓</div>
-            <h2 className="text-xl font-bold mb-4 text-green-600">Register Berhasil!</h2>
-            <p className="mb-4">
-              Username <strong>{userName}</strong> telah berhasil terdaftar.
-            </p>
-            <p className="text-sm text-gray-600 mb-4">
-              Anda sekarang dapat menggunakan akun ini untuk login.
-            </p>
-            <button
-              className="btn btn-success"
-              onClick={closeModal}
-            >
-              Tutup
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* User List Modal */}
-      {showModal && modalType === "userlist" && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg max-h-96">
-            <h2 className="text-xl font-bold mb-4 text-center">
-              Daftar Pengguna ({userList.length})
+            <h2 className="text-xl font-bold mb-2 text-green-600">
+              Register Berhasil!
             </h2>
-            {userList.length > 0 ? (
-              <div className="max-h-60 overflow-y-auto">
-                <div className="space-y-2">
-                  {userList.map((user, index) => (
-                    <div key={user.id || index} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="font-medium">{user.username}</div>
-                      <div className="text-sm text-gray-600">
-                        Role: <span className="capitalize">{user.role}</span>
-                      </div>
-                      {user.created_at && (
-                        <div className="text-xs text-gray-500">
-                          Bergabung: {new Date(user.created_at).toLocaleDateString('id-ID')}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="text-center text-gray-500">Tidak ada pengguna ditemukan</p>
-            )}
-            <button
-              onClick={closeModal}
-              className="btn btn-outline w-full mt-4"
-            >
+            <p className="mb-4">
+              Username <strong>{userName}</strong> telah terdaftar.
+            </p>
+            <button className="btn btn-success w-full" onClick={closeModal}>
               Tutup
             </button>
           </div>

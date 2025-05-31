@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 function Navbar() {
@@ -23,17 +23,17 @@ function Navbar() {
 
   const checkAuthStatus = async () => {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem("access_token");
       if (!token) {
         setIsLoading(false);
         return;
       }
 
-      const response = await fetch('/api/auth/profile', {
-        method: 'GET',
+      const response = await fetch("/api/auth/profile", {
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -42,12 +42,12 @@ function Navbar() {
         setUser(data.user);
       } else {
         // Token might be expired or invalid
-        localStorage.removeItem('access_token');
+        localStorage.removeItem("access_token");
         setUser(null);
       }
     } catch (error) {
-      console.error('Error checking auth status:', error);
-      localStorage.removeItem('access_token');
+      console.error("Error checking auth status:", error);
+      localStorage.removeItem("access_token");
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -55,12 +55,13 @@ function Navbar() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
+    localStorage.removeItem("access_token");
     setUser(null);
-    navigate('/');
+    navigate("/");
   };
 
   const renderAuthLinks = () => {
+    const location = useLocation();
     if (isLoading) {
       return (
         <li>
@@ -75,18 +76,27 @@ function Navbar() {
           <div tabIndex={0} role="button" className="btn btn-ghost">
             <span className="mr-1">👤</span>
             {user.username}
-            <svg className="fill-current w-4 h-4 ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+            <svg
+              className="fill-current w-4 h-4 ml-1"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+            >
+              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
             </svg>
           </div>
-          <ul tabIndex={0} className={`dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 ${scrolled ? 'text-black' : 'text-black'}`}>
+          <ul
+            tabIndex={0}
+            className={`dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 ${
+              scrolled ? "text-black" : "text-black"
+            }`}
+          >
             <li>
               <Link to="/profile" className="flex items-center">
                 <span className="mr-2">👤</span>
                 Profile
               </Link>
             </li>
-            {user.role === 'admin' && (
+            {user.role === "admin" && (
               <li>
                 <Link to="/admin" className="flex items-center">
                   <span className="mr-2">⚙️</span>
@@ -95,7 +105,10 @@ function Navbar() {
               </li>
             )}
             <li>
-              <button onClick={handleLogout} className="flex items-center w-full text-left">
+              <button
+                onClick={handleLogout}
+                className="flex items-center w-full text-left"
+              >
                 <span className="mr-2">🚪</span>
                 Logout
               </button>
@@ -105,16 +118,39 @@ function Navbar() {
       );
     }
 
-    return (
-      <>
-        <li>
-          <Link to="/register">Register</Link>
-        </li>
-        <li>
-          <Link to="/login">Login</Link>
-        </li>
-      </>
-    );
+    switch (location.pathname) {
+      case "/":
+      case "/room":
+      case "/contact":
+        return (
+          <li>
+            <Link to="/login">Login</Link>
+          </li>
+        );
+      case "/login":
+        return (
+          <li>
+            <Link to="/register">Register</Link>
+          </li>
+        );
+      case "/register":
+        return (
+          <li>
+            <Link to="/login">Login</Link>
+          </li>
+        );
+      default:
+        return (
+          <>
+            <li>
+              <Link to="/register">Register</Link>
+            </li>
+            <li>
+              <Link to="/login">Login</Link>
+            </li>
+          </>
+        );
+    }
   };
 
   return (
@@ -124,13 +160,13 @@ function Navbar() {
       } p-3`}
     >
       <div className="flex-1 ml-5">
-        <Link
-          to="/"
-          className={`btn btn-ghost text-xl transition-colors duration-300 ${
-            scrolled ? "text-black" : "text-white"
-          }`}
-        >
-          BookingMe
+        <Link to="/" className="p-0">
+          <img
+            src={scrolled ? "/img/logo-samping.png" : "/img/logo-putih.png"}
+            alt="Logo"
+            className="h-16 ms-10 transition-all duration-300 select-none pointer-events-auto"
+            draggable="false"
+          />
         </Link>
       </div>
       <div className="flex-none me-5">
@@ -144,9 +180,6 @@ function Navbar() {
           </li>
           <li>
             <Link to="/room">Room</Link>
-          </li>
-          <li>
-            <Link to="/reservation">Reservation</Link>
           </li>
           <li>
             <Link to="/contact">Contact</Link>

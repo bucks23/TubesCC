@@ -1,22 +1,25 @@
 import { useState } from "react";
+import { FiUser, FiLock } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Navbar from "./layouts/Navbar";
 
 function Login() {
   const [password, setPassword] = useState("");
   const [userName, setUserName] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!userName.trim() || !password.trim()) {
-      setError("Username dan password harus diisi");
+      toast.warn("Username dan password harus diisi", {
+        position: "top-right",
+        autoClose: 3000,
+      });
       return;
     }
 
     setLoading(true);
-    setError("");
-    setSuccess("");
 
     try {
       const response = await fetch("http://localhost:5000/api/auth/login", {
@@ -34,19 +37,24 @@ function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || `Login failed: ${response.status}`);
+        throw new Error(data.error || `Login gagal: ${response.status}`);
       }
 
       if (data.access_token) {
         localStorage.setItem("access_token", data.access_token);
         localStorage.setItem("user", JSON.stringify(data.user));
+        toast.success("Login berhasil!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setUserName("");
+        setPassword("");
       }
-
-      setSuccess("Login berhasil!");
-      setUserName("");
-      setPassword("");
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message || "Terjadi kesalahan saat login", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     } finally {
       setLoading(false);
     }
@@ -55,66 +63,67 @@ function Login() {
   return (
     <>
       <Navbar />
+      <ToastContainer />
       <div
         className="hero min-h-screen bg-cover bg-center"
         style={{ backgroundImage: "url('/img/login.jpg')" }}
       >
-        <div className="hero-content flex flex-col items-center justify-center text-center mt-10">
-          <div className="card bg-base-100 w-full max-w-lg shadow-2xl m-10 p-8 rounded-lg">
-            <div className="card-header p-5">
-              <h1 className="text-xl font-bold">Login</h1>
-              <p className="text-sm text-gray-500">
-                Masukkan akun Anda untuk masuk
-              </p>
-            </div>
-            <div className="card-body justify-start">
-              <fieldset className="space-y-4">
-                <div>
-                  <label className="block text-left text-sm font-medium text-gray-700">
-                    Username
-                  </label>
+        <div className="hero-overlay bg-black/60 backdrop-blur-sm"></div>
+        <div className="hero-content text-center text-neutral-content w-full flex flex-col items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white/10 p-8 rounded-2xl shadow-xl backdrop-blur-md border border-white/20">
+            <h2 className="text-3xl font-semibold mb-2 text-white tracking-wider">
+              Selamat Datang
+            </h2>
+            <p className="text-white/70 mb-6">Masukkan akun Anda untuk masuk</p>
+
+            <div className="space-y-5">
+              <div>
+                <div className="flex items-center bg-white/10 rounded-lg px-3 py-2 border border-white/20">
+                  <FiUser className="text-white/70 mr-2" />
                   <input
                     type="text"
-                    className="input input-bordered w-full"
+                    className="bg-transparent outline-none w-full text-white placeholder-white/70"
                     placeholder="Masukkan username"
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
                     disabled={loading}
                   />
                 </div>
-                <div>
-                  <label className="block text-left text-sm font-medium text-gray-700">
-                    Password
-                  </label>
+              </div>
+
+              <div>
+                <div className="flex items-center bg-white/10 rounded-lg px-3 py-2 border border-white/20">
+                  <FiLock className="text-white/70 mr-2" />
                   <input
                     type="password"
-                    className="input input-bordered w-full"
+                    className="bg-transparent outline-none w-full text-white placeholder-white/70"
                     placeholder="Masukkan password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
                   />
                 </div>
-                <button
-                  className={`btn btn-neutral w-full mt-4 ${loading ? "loading" : ""}`}
-                  onClick={handleLogin}
-                  disabled={loading}
+              </div>
+
+              <button
+                onClick={handleLogin}
+                disabled={loading}
+                className={`w-full py-3 bg-violet-700 hover:bg-violet-800 text-white font-semibold rounded-lg transition ${
+                  loading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {loading ? "Memproses..." : "Login"}
+              </button>
+
+              <div className="text-center">
+                <span className="text-sm text-white/70">Belum punya akun?</span>{" "}
+                <Link
+                  to="/register"
+                  className="text-white font-semibold hover:underline"
                 >
-                  {loading ? "Loading..." : "Login"}
-                </button>
-              </fieldset>
-
-              {error && (
-                <div className="alert alert-error mt-4">
-                  <span>Error: {error}</span>
-                </div>
-              )}
-
-              {success && (
-                <div className="alert alert-success mt-4">
-                  <span>{success}</span>
-                </div>
-              )}
+                  Daftar Sekarang
+                </Link>
+              </div>
             </div>
           </div>
         </div>
