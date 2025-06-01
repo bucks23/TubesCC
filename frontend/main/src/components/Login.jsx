@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FiUser, FiLock } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Navbar from "./layouts/Navbar";
@@ -9,6 +9,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = async () => {
     if (!userName.trim() || !password.trim()) {
@@ -24,10 +25,7 @@ function Login() {
     try {
       const response = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
-        mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: userName.trim(),
           password: password.trim(),
@@ -37,7 +35,7 @@ function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || `Login gagal: ${response.status}`);
+        throw new Error(data.error || "Login gagal");
       }
 
       if (data.access_token) {
@@ -47,8 +45,11 @@ function Login() {
           position: "top-right",
           autoClose: 3000,
         });
+
         setUserName("");
         setPassword("");
+        window.dispatchEvent(new Event("user-login"));
+        navigate("/");
       }
     } catch (err) {
       toast.error(err.message || "Terjadi kesalahan saat login", {
@@ -69,7 +70,7 @@ function Login() {
         style={{ backgroundImage: "url('/img/login.jpg')" }}
       >
         <div className="hero-overlay bg-black/60 backdrop-blur-sm"></div>
-        <div className="hero-content text-center text-neutral-content w-full flex flex-col items-center justify-center p-4">
+        <div className="hero-content text-center w-full flex flex-col items-center justify-center p-4">
           <div className="w-full max-w-md bg-white/10 p-8 rounded-2xl shadow-xl backdrop-blur-md border border-white/20">
             <h2 className="text-3xl font-semibold mb-2 text-white tracking-wider">
               Selamat Datang
@@ -77,32 +78,28 @@ function Login() {
             <p className="text-white/70 mb-6">Masukkan akun Anda untuk masuk</p>
 
             <div className="space-y-5">
-              <div>
-                <div className="flex items-center bg-white/10 rounded-lg px-3 py-2 border border-white/20">
-                  <FiUser className="text-white/70 mr-2" />
-                  <input
-                    type="text"
-                    className="bg-transparent outline-none w-full text-white placeholder-white/70"
-                    placeholder="Masukkan username"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    disabled={loading}
-                  />
-                </div>
+              <div className="flex items-center bg-white/10 rounded-lg px-3 py-2 border border-white/20">
+                <FiUser className="text-white/70 mr-2" />
+                <input
+                  type="text"
+                  className="bg-transparent outline-none w-full text-white placeholder-white/70"
+                  placeholder="Masukkan username"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  disabled={loading}
+                />
               </div>
 
-              <div>
-                <div className="flex items-center bg-white/10 rounded-lg px-3 py-2 border border-white/20">
-                  <FiLock className="text-white/70 mr-2" />
-                  <input
-                    type="password"
-                    className="bg-transparent outline-none w-full text-white placeholder-white/70"
-                    placeholder="Masukkan password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading}
-                  />
-                </div>
+              <div className="flex items-center bg-white/10 rounded-lg px-3 py-2 border border-white/20">
+                <FiLock className="text-white/70 mr-2" />
+                <input
+                  type="password"
+                  className="bg-transparent outline-none w-full text-white placeholder-white/70"
+                  placeholder="Masukkan password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                />
               </div>
 
               <button

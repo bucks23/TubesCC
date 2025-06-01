@@ -1,10 +1,10 @@
-version: '3.10'
+version: "3.10"
 
 services:
   backend:
     build:
       context: ./backend
-    container_name: flask_container
+    container_name: be_pacific-up_v1
     ports:
       - "5000:5000"
     depends_on:
@@ -18,15 +18,15 @@ services:
   frontend:
     build:
       context: ./frontend/main
-    container_name: react_container
+    container_name: fe_pacific-up_v2
     ports:
-      - "3000:80"
+      - "3001:80"
     depends_on:
       - backend
 
   db:
     image: postgres:12-alpine
-    container_name: postgres_container
+    container_name: db_pacific-up_v1
     environment:
       - POSTGRES_DB=hotel_cc
       - POSTGRES_USER=hotel_cc

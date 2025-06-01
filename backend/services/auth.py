@@ -1,13 +1,13 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime
 import psycopg2
 import psycopg2.extras
 from contextlib import contextmanager
 import os
 from dotenv import load_dotenv
-from .conn import get_db_connection
+from .conn import get_db_connection  # Pastikan kamu punya modul conn.py yang berisi fungsi ini
 
 # Load environment variables
 load_dotenv()
@@ -48,12 +48,8 @@ def init_db():
         """)
         
         # Create indexes for faster lookups
-        cur.execute("""
-            CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)
-        """)
-        cur.execute("""
-            CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)
-        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)")
         
         conn.commit()
         print("Database initialized successfully")
@@ -279,31 +275,22 @@ def update_profile():
             return jsonify({'error': 'Username must be at least 3 characters long and contain only letters, numbers, underscores, and hyphens'}), 400
         
         with get_db_cursor() as conn:
-            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur = conn.cursor()
+            # Check if username exists for other users
+            cur.execute("""
+                SELECT id FROM users WHERE username = %s AND id != %s
+            """, (username, current_user_id))
+            if cur.fetchone():
+                return jsonify({'error': 'Username already taken'}), 400
             
-            try:
-                cur.execute("""
-                    UPDATE users 
-                    SET username = %s
-                    WHERE id = %s
-                    RETURNING id, username, role, created_at
-                """, (username, current_user_id))
-                
-                user = cur.fetchone()
-                conn.commit()
-                
-                if not user:
-                    return jsonify({'error': 'User not found'}), 404
-                
-                return jsonify({
-                    'message': 'Profile updated successfully',
-                    'user': format_user_response(dict(user))
-                }), 200
-                
-            except psycopg2.IntegrityError:
-                conn.rollback()
-                return jsonify({'error': 'Username already exists'}), 400
+            # Update username
+            cur.execute("""
+                UPDATE users SET username = %s WHERE id = %s
+            """, (username, current_user_id))
+            conn.commit()
         
+        return jsonify({'message': 'Username updated successfully'}), 200
+    
     except psycopg2.Error as e:
         print(f"Database error in update_profile: {e}")
         return jsonify({'error': 'Database error occurred'}), 500
@@ -311,7 +298,7 @@ def update_profile():
         print(f"Unexpected error in update_profile: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
-@auth_bp.route('/change-password', methods=['PUT'])
+@auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()
 def change_password():
     try:
@@ -321,37 +308,35 @@ def change_password():
         if not data:
             return jsonify({'error': 'No data provided'}), 400
         
-        # Validate input
-        if not data.get('current_password') or not data.get('new_password'):
-            return jsonify({'error': 'Current password and new password are required'}), 400
+        # Validate input fields
+        required_fields = ['old_password', 'new_password']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({'error': f'{field} is required'}), 400
         
         if len(data['new_password']) < 6:
             return jsonify({'error': 'New password must be at least 6 characters long'}), 400
         
-        # Get current user with password hash
+        # Get user including password hash
         user = get_user_with_password(current_user_id)
         if not user:
             return jsonify({'error': 'User not found'}), 404
         
-        # Verify current password
-        if not verify_password(user['password'], data['current_password']):
-            return jsonify({'error': 'Current password is incorrect'}), 401
+        # Verify old password
+        if not verify_password(user['password'], data['old_password']):
+            return jsonify({'error': 'Old password is incorrect'}), 401
         
-        # Update password
+        # Hash new password and update
         new_password_hash = generate_password_hash(data['new_password'])
         
         with get_db_cursor() as conn:
             cur = conn.cursor()
-            
             cur.execute("""
-                UPDATE users 
-                SET password = %s
-                WHERE id = %s
+                UPDATE users SET password = %s WHERE id = %s
             """, (new_password_hash, current_user_id))
-            
             conn.commit()
         
-        return jsonify({'message': 'Password changed successfully'}), 200
+        return jsonify({'message': 'Password updated successfully'}), 200
         
     except psycopg2.Error as e:
         print(f"Database error in change_password: {e}")
@@ -360,144 +345,56 @@ def change_password():
         print(f"Unexpected error in change_password: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
-@auth_bp.route('/change-role', methods=['PUT'])
+@auth_bp.route('/change-role', methods=['POST'])
 @jwt_required()
 def change_role():
-    """Change user role - only admins can change roles"""
     try:
         current_user_id = get_jwt_identity()
-        current_user = get_user_by_id(current_user_id)
-        
-        # Check if current user is admin
-        if not current_user or current_user['role'] != 'admin':
-            return jsonify({'error': 'Insufficient permissions'}), 403
-        
         data = request.get_json()
         
-        if not data or not data.get('user_id') or not data.get('new_role'):
-            return jsonify({'error': 'User ID and new role are required'}), 400
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
         
-        if not validate_role(data['new_role']):
-            return jsonify({'error': 'Invalid role. Must be one of: guest, user, admin, moderator'}), 400
+        # Validate required fields
+        required_fields = ['target_user_id', 'new_role']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'{field} is required'}), 400
         
+        target_user_id = data['target_user_id']
+        new_role = data['new_role']
+        
+        # Check role validity
+        if not validate_role(new_role):
+            return jsonify({'error': 'Invalid role'}), 400
+        
+        # Only admin can change roles
+        current_user = get_user_by_id(current_user_id)
+        if not current_user or current_user['role'] != 'admin':
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        # Prevent admin from downgrading their own role
+        if target_user_id == current_user_id:
+            return jsonify({'error': 'Admin cannot change own role'}), 403
+        
+        # Check target user exists
+        target_user = get_user_by_id(target_user_id)
+        if not target_user:
+            return jsonify({'error': 'Target user not found'}), 404
+        
+        # Update role
         with get_db_cursor() as conn:
-            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            
+            cur = conn.cursor()
             cur.execute("""
-                UPDATE users 
-                SET role = %s
-                WHERE id = %s
-                RETURNING id, username, role, created_at
-            """, (data['new_role'], data['user_id']))
-            
-            user = cur.fetchone()
+                UPDATE users SET role = %s WHERE id = %s
+            """, (new_role, target_user_id))
             conn.commit()
-            
-            if not user:
-                return jsonify({'error': 'User not found'}), 404
-            
-            return jsonify({
-                'message': 'User role updated successfully',
-                'user': format_user_response(dict(user))
-            }), 200
         
+        return jsonify({'message': 'Role updated successfully'}), 200
+    
     except psycopg2.Error as e:
         print(f"Database error in change_role: {e}")
         return jsonify({'error': 'Database error occurred'}), 500
     except Exception as e:
         print(f"Unexpected error in change_role: {e}")
-        return jsonify({'error': 'An unexpected error occurred'}), 500
-
-@auth_bp.route('/protected', methods=['GET'])
-@jwt_required()
-def protected():
-    try:
-        current_user_id = get_jwt_identity()
-        user = get_user_by_id(current_user_id)
-        
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-        
-        return jsonify({
-            'message': f'Hello {user["username"]}! This is a protected route.',
-            'user_id': current_user_id,
-            'role': user['role'],
-            'timestamp': datetime.utcnow().isoformat()
-        }), 200
-        
-    except psycopg2.Error as e:
-        print(f"Database error in protected: {e}")
-        return jsonify({'error': 'Database error occurred'}), 500
-    except Exception as e:
-        print(f"Unexpected error in protected: {e}")
-        return jsonify({'error': 'An unexpected error occurred'}), 500
-
-@auth_bp.route('/admin/users', methods=['GET'])
-@jwt_required()
-def get_all_users():
-    """Get all users - admin only"""
-    try:
-        current_user_id = get_jwt_identity()
-        current_user = get_user_by_id(current_user_id)
-        
-        # Check if current user is admin
-        if not current_user or current_user['role'] != 'admin':
-            return jsonify({'error': 'Insufficient permissions'}), 403
-        
-        with get_db_cursor() as conn:
-            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            
-            cur.execute("""
-                SELECT id, username, role, created_at
-                FROM users
-                ORDER BY created_at DESC
-            """)
-            
-            users = [format_user_response(dict(user)) for user in cur.fetchall()]
-            
-            return jsonify({'users': users}), 200
-        
-    except psycopg2.Error as e:
-        print(f"Database error in get_all_users: {e}")
-        return jsonify({'error': 'Database error occurred'}), 500
-    except Exception as e:
-        print(f"Unexpected error in get_all_users: {e}")
-        return jsonify({'error': 'An unexpected error occurred'}), 500
-
-@auth_bp.route('/users/stats', methods=['GET'])
-@jwt_required()
-def get_user_stats():
-    """Get user statistics"""
-    try:
-        current_user_id = get_jwt_identity()
-        current_user = get_user_by_id(current_user_id)
-        
-        # Check if current user is admin or moderator
-        if not current_user or current_user['role'] not in ['admin', 'moderator']:
-            return jsonify({'error': 'Insufficient permissions'}), 403
-        
-        with get_db_cursor() as conn:
-            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            
-            cur.execute("""
-                SELECT 
-                    COUNT(*) as total_users,
-                    COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as users_last_30_days,
-                    COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '7 days' THEN 1 END) as users_last_7_days,
-                    COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_count,
-                    COUNT(CASE WHEN role = 'moderator' THEN 1 END) as moderator_count,
-                    COUNT(CASE WHEN role = 'user' THEN 1 END) as user_count,
-                    COUNT(CASE WHEN role = 'guest' THEN 1 END) as guest_count
-                FROM users
-            """)
-            
-            stats = dict(cur.fetchone())
-            
-            return jsonify({'stats': stats}), 200
-            
-    except psycopg2.Error as e:
-        print(f"Database error in get_user_stats: {e}")
-        return jsonify({'error': 'Database error occurred'}), 500
-    except Exception as e:
-        print(f"Unexpected error in get_user_stats: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500

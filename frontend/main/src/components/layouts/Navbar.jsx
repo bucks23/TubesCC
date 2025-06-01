@@ -6,30 +6,43 @@ function Navbar() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    // Handle scroll untuk efek navbar
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-
     window.addEventListener("scroll", handleScroll);
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Check authentication status on component mount
   useEffect(() => {
+    // Cek status login saat pertama kali mount
     checkAuthStatus();
+
+    // Listener untuk event login agar navbar update otomatis
+    const handleLoginEvent = () => {
+      checkAuthStatus();
+    };
+    window.addEventListener("user-login", handleLoginEvent);
+
+    return () => window.removeEventListener("user-login", handleLoginEvent);
   }, []);
 
   const checkAuthStatus = async () => {
+    setIsLoading(true);
+
     try {
       const token = localStorage.getItem("access_token");
       if (!token) {
+        setUser(null);
         setIsLoading(false);
         return;
       }
 
-      const response = await fetch("/api/auth/profile", {
+      const response = await fetch("http://localhost:5000/api/auth/profile", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -41,12 +54,12 @@ function Navbar() {
         const data = await response.json();
         setUser(data.user);
       } else {
-        // Token might be expired or invalid
+        // Token invalid / expired
         localStorage.removeItem("access_token");
         setUser(null);
       }
     } catch (error) {
-      console.error("Error checking auth status:", error);
+      console.error("Auth check error:", error);
       localStorage.removeItem("access_token");
       setUser(null);
     } finally {
@@ -61,7 +74,6 @@ function Navbar() {
   };
 
   const renderAuthLinks = () => {
-    const location = useLocation();
     if (isLoading) {
       return (
         <li>
@@ -73,33 +85,38 @@ function Navbar() {
     if (user) {
       return (
         <li className="dropdown dropdown-end">
-          <div tabIndex={0} role="button" className="btn btn-ghost">
-            <span className="mr-1">👤</span>
-            {user.username}
+          <div
+            tabIndex={0}
+            role="button"
+            className="btn btn-ghost flex items-center gap-1"
+          >
+            <span role="img" aria-label="user">
+              👤
+            </span>
+            <span>{user.username}</span>
             <svg
               className="fill-current w-4 h-4 ml-1"
-              xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
             >
               <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
             </svg>
           </div>
-          <ul
-            tabIndex={0}
-            className={`dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 ${
-              scrolled ? "text-black" : "text-black"
-            }`}
-          >
+          <ul className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 text-black">
             <li>
-              <Link to="/profile" className="flex items-center">
-                <span className="mr-2">👤</span>
+              <Link to="/profile" className="flex items-center gap-2">
+                <span role="img" aria-label="profile">
+                  👤
+                </span>
                 Profile
               </Link>
             </li>
             {user.role === "admin" && (
               <li>
-                <Link to="/admin" className="flex items-center">
-                  <span className="mr-2">⚙️</span>
+                <Link to="/admin" className="flex items-center gap-2">
+                  <span role="img" aria-label="admin">
+                    ⚙️
+                  </span>
                   Admin Panel
                 </Link>
               </li>
@@ -107,9 +124,11 @@ function Navbar() {
             <li>
               <button
                 onClick={handleLogout}
-                className="flex items-center w-full text-left"
+                className="flex items-center w-full text-left gap-2"
               >
-                <span className="mr-2">🚪</span>
+                <span role="img" aria-label="logout">
+                  🚪
+                </span>
                 Logout
               </button>
             </li>
@@ -118,39 +137,28 @@ function Navbar() {
       );
     }
 
-    switch (location.pathname) {
-      case "/":
-      case "/room":
-      case "/contact":
-        return (
-          <li>
-            <Link to="/login">Login</Link>
-          </li>
-        );
-      case "/login":
-        return (
-          <li>
-            <Link to="/register">Register</Link>
-          </li>
-        );
-      case "/register":
-        return (
-          <li>
-            <Link to="/login">Login</Link>
-          </li>
-        );
-      default:
-        return (
-          <>
-            <li>
-              <Link to="/register">Register</Link>
-            </li>
-            <li>
-              <Link to="/login">Login</Link>
-            </li>
-          </>
-        );
+    // Jika belum login, sesuaikan link berdasarkan halaman sekarang
+    if (location.pathname === "/login") {
+      return (
+        <li>
+          <Link to="/register">Register</Link>
+        </li>
+      );
     }
+
+    if (location.pathname === "/register") {
+      return (
+        <li>
+          <Link to="/login">Login</Link>
+        </li>
+      );
+    }
+
+    return (
+      <li>
+        <Link to="/login">Login</Link>
+      </li>
+    );
   };
 
   return (

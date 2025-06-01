@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "./layouts/Navbar";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -9,8 +9,8 @@ function Register() {
   const [password, setPassword] = useState("");
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState("");
+
+  const navigate = useNavigate();
 
   const handleRegister = async () => {
     if (!userName.trim() || !password.trim()) {
@@ -56,20 +56,17 @@ function Register() {
       }
 
       toast.success(`User ${data.user.username} berhasil terdaftar!`);
-      setModalType("register");
-      setShowModal(true);
       setUserName("");
       setPassword("");
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
     } catch (err) {
       toast.error(err.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setModalType("");
   };
 
   return (
@@ -135,24 +132,6 @@ function Register() {
           </div>
         </div>
       </div>
-
-      {/* Modal Register Success */}
-      {showModal && modalType === "register" && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
-            <div className="text-green-500 text-4xl mb-4">✓</div>
-            <h2 className="text-xl font-bold mb-2 text-green-600">
-              Register Berhasil!
-            </h2>
-            <p className="mb-4">
-              Username <strong>{userName}</strong> telah terdaftar.
-            </p>
-            <button className="btn btn-success w-full" onClick={closeModal}>
-              Tutup
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }
