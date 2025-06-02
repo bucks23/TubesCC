@@ -113,8 +113,8 @@ const Landing = () => {
                 Pilih tipe kamar
               </option>
               {roomTypes.map((room) => (
-                <option key={room.id} value={room.name}>
-                  {room.name}
+                <option key={room.id} value={room.room_type}>
+                  {room.room_type}
                 </option>
               ))}
             </select>
