@@ -1,4 +1,3 @@
-# auth.py
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -17,40 +16,6 @@ load_dotenv()
 
 # Create Blueprint
 auth_bp = Blueprint('auth', __name__)
-
-# CORS configuration
-CORS_ORIGINS = [
-    'http://localhost:3000',
-    'https://localhost:3000',
-    'https://web-production-f02bf.up.railway.app',  # Your proxy domain
-    'https://adventurous-motivation-production.up.railway.app',  # Your backend domain
-]
-
-# CORS headers helper function
-def add_cors_headers(response):
-    """Add CORS headers to response"""
-    origin = request.headers.get('Origin')
-    if origin in CORS_ORIGINS:
-        response.headers['Access-Control-Allow-Origin'] = origin
-    else:
-        response.headers['Access-Control-Allow-Origin'] = '*'
-    
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    return response
-
-# OPTIONS handler for preflight requests
-@auth_bp.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        response = jsonify({'status': 'ok'})
-        return add_cors_headers(response)
-
-# Add CORS headers to all responses
-@auth_bp.after_request
-def after_request(response):
-    return add_cors_headers(response)
 
 # Database connection manager using your existing conn.py
 @contextmanager
@@ -178,19 +143,8 @@ def validate_role(role):
     valid_roles = ['guest', 'user', 'admin', 'moderator']
     return role in valid_roles
 
-# Debug endpoint for CORS testing
-@auth_bp.route('/debug/cors-test', methods=['GET', 'POST', 'OPTIONS'])
-def cors_test():
-    """Test CORS configuration"""
-    return jsonify({
-        'message': 'CORS test successful',
-        'method': request.method,
-        'origin': request.headers.get('Origin'),
-        'cors_origins': CORS_ORIGINS,
-        'timestamp': datetime.now().isoformat()
-    }), 200
 
-@auth_bp.route('/debug/token-info', methods=['POST', 'OPTIONS'])
+@auth_bp.route('/debug/token-info', methods=['POST'])
 def debug_token_info():
     """Debug endpoint to analyze any JWT token"""
     try:
@@ -224,7 +178,7 @@ def debug_token_info():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@auth_bp.route('/debug/verify-token', methods=['POST', 'OPTIONS'])
+@auth_bp.route('/debug/verify-token', methods=['POST'])
 def debug_verify_token():
     """Debug endpoint to verify token with current secret"""
     try:
@@ -276,7 +230,7 @@ def debug_verify_token():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@auth_bp.route('/debug/new-token', methods=['POST', 'OPTIONS'])
+@auth_bp.route('/debug/new-token', methods=['POST'])
 def debug_new_token():
     """Generate a new token for existing user"""
     try:
@@ -304,8 +258,8 @@ def debug_new_token():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Enhanced login route with better debugging
-@auth_bp.route('/login-debug', methods=['POST', 'OPTIONS'])
+# 3. Enhanced login route with better debugging
+@auth_bp.route('/login-debug', methods=['POST'])
 def login_debug():
     """Login with detailed debugging information"""
     try:
@@ -350,8 +304,8 @@ def login_debug():
         print(f"Login debug error: {e}")
         return jsonify({'error': str(e)}), 500
 
-# Main Routes
-@auth_bp.route('/register', methods=['POST', 'OPTIONS'])
+# Routes
+@auth_bp.route('/register', methods=['POST'])
 def register():
     try:
         data = request.get_json()
@@ -405,7 +359,7 @@ def register():
         print(f"Unexpected error in register: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
-@auth_bp.route('/login', methods=['POST', 'OPTIONS'])
+@auth_bp.route('/login', methods=['POST'])
 def login():
     try:
         data = request.get_json()
@@ -445,7 +399,7 @@ def login():
         print(f"Unexpected error in login: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
-@auth_bp.route('/profile', methods=['GET', 'OPTIONS'])
+@auth_bp.route('/profile', methods=['GET'])
 @jwt_required()
 def get_profile():
     try:
@@ -464,7 +418,7 @@ def get_profile():
         print(f"Unexpected error in get_profile: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
-@auth_bp.route('/profile', methods=['PUT', 'OPTIONS'])
+@auth_bp.route('/profile', methods=['PUT'])
 @jwt_required()
 def update_profile():
     try:
@@ -507,7 +461,7 @@ def update_profile():
         print(f"Unexpected error in update_profile: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
-@auth_bp.route('/change-password', methods=['POST', 'OPTIONS'])
+@auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()
 def change_password():
     try:
@@ -554,7 +508,7 @@ def change_password():
         print(f"Unexpected error in change_password: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
-@auth_bp.route('/change-role', methods=['POST', 'OPTIONS'])
+@auth_bp.route('/change-role', methods=['POST'])
 @jwt_required()
 def change_role():
     try:
@@ -607,10 +561,3 @@ def change_role():
     except Exception as e:
         print(f"Unexpected error in change_role: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
-
-# Initialize database when blueprint is imported
-try:
-    init_db()
-    print("✅ Auth blueprint initialized successfully")
-except Exception as e:
-    print(f"⚠️ Warning: Database initialization failed: {e}")

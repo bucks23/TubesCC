@@ -8,7 +8,7 @@ from services.conn import get_db_connection
 from datetime import timedelta
 from flask_cors import CORS
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # Add this import
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter
 
 # Load environment variables BEFORE creating the app
@@ -25,26 +25,7 @@ print(f"DEBUG: JWT_SECRET_KEY loaded: {app.config['JWT_SECRET_KEY'][:10]}...")
 
 # Initialize extensions
 jwt = JWTManager(app)
-
-# CORS Configuration - Updated to include proxy domain
-cors_origins = [
-    'http://localhost:3000',
-    'https://localhost:3000',
-    'https://web-production-f02bf.up.railway.app',  # Your proxy domain
-    'https://adventurous-motivation-production.up.railway.app',  # Your backend domain
-]
-
-# Add additional origins from environment if provided
-env_origins = os.getenv('CORS_ORIGINS', '')
-if env_origins:
-    additional_origins = env_origins.split(',')
-    cors_origins.extend([origin.strip() for origin in additional_origins])
-
-CORS(app, 
-     origins=cors_origins,
-     allow_headers=['Content-Type', 'Authorization'],
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-     supports_credentials=True)
+CORS(app, origins=os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(','))
 
 # Register blueprint routes
 app.register_blueprint(room_bp, url_prefix='/api/rooms')
@@ -100,8 +81,7 @@ def health_check():
         return jsonify({
             'status': 'healthy',
             'database': 'connected',
-            'jwt_secret_configured': bool(os.getenv('JWT_SECRET_KEY')),
-            'cors_origins': cors_origins
+            'jwt_secret_configured': bool(os.getenv('JWT_SECRET_KEY'))
         }), 200
     except Exception as e:
         return jsonify({
@@ -119,8 +99,7 @@ def debug_config():
         'jwt_token_expires': os.getenv('JWT_ACCESS_TOKEN_EXPIRES'),
         'database_url_set': bool(os.getenv('DATABASE_URL')),
         'flask_env': os.getenv('FLASK_ENV'),
-        'cors_origins': cors_origins,
-        'proxy_domain_included': 'web-production-f02bf.up.railway.app' in cors_origins
+        'cors_origins': os.getenv('CORS_ORIGINS')
     })
 
 # Prometheus metrics endpoint
@@ -138,16 +117,6 @@ def list_routes():
             'rule': rule.rule
         })
     return jsonify(routes)
-
-# Add preflight handler for OPTIONS requests
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        response = Response()
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add('Access-Control-Allow-Headers', "*")
-        response.headers.add('Access-Control-Allow-Methods', "*")
-        return response
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
