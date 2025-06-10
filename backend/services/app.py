@@ -27,7 +27,7 @@ print(f"DEBUG: JWT_SECRET_KEY loaded: {app.config['JWT_SECRET_KEY'][:10]}...")
 jwt = JWTManager(app)
 
 # FIXED CORS Configuration - Updated to include your frontend domain
-cors_origins = os.getenv('CORS_ORIGINS', 'https://remarkable-amazement-production.up.railway.app,http://localhost:3000,http://localhost:5173')
+cors_origins = os.getenv('CORS_ORIGINS', 'https://remarkable-amazement-production.up.railway.app')
 print(f"DEBUG: CORS Origins configured: {cors_origins}")
 
 CORS(app, 
@@ -37,11 +37,11 @@ CORS(app,
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 )
 
-# Register blueprint routes - FIXED: Remove '/api' from url_prefix since it's already in blueprint
-app.register_blueprint(room_bp, url_prefix='/api')
-app.register_blueprint(auth_bp, url_prefix='/api')
-app.register_blueprint(booking_bp, url_prefix='/api')
-app.register_blueprint(payment_bp, url_prefix='/api')
+# Register blueprint routes
+app.register_blueprint(room_bp, url_prefix='/api/rooms')
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(booking_bp, url_prefix='/api/booking')
+app.register_blueprint(payment_bp, url_prefix='/api/payment')
 
 # Enhanced JWT Error handlers with better debugging
 @jwt.expired_token_loader
