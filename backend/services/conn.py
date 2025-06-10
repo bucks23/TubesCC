@@ -57,11 +57,11 @@ def get_db_connection():
         try:
             # Method 1: Using parameters (RECOMMENDED)
             conn = psycopg2.connect(
-                host=os.environ.get("DB_HOST", "turntable.proxy.rlwy.net"),
-                port=os.environ.get("DB_PORT", "52503"),
-                database=os.environ.get("DB_NAME", "railway"),
-                user=os.environ.get("DB_USER", "postgres"),
-                password=os.environ.get("DB_PASSWORD", "jUzVOeOdaPbAICxOozhAfCcsGIxCGobL"),
+                host=os.environ.get("PGHOST", "turntable.proxy.rlwy.net"),
+                port=os.environ.get("PGPORT", "52503"),
+                database=os.environ.get("PGNAME", "railway"),
+                user=os.environ.get("PGUSER", "postgres"),
+                password=os.environ.get("PGPASSWORD", "jUzVOeOdaPbAICxOozhAfCcsGIxCGobL"),
                 sslmode='require'  # Required for Railway
             )
             print("✅ Connected to database successfully!")
