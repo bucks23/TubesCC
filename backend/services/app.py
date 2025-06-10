@@ -8,7 +8,7 @@ from services.conn import get_db_connection
 from datetime import timedelta
 from flask_cors import CORS
 import os
-from dotenv import load_dotenv  # Add this import
+from dotenv import load_dotenv
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter
 
 # Load environment variables BEFORE creating the app
@@ -25,7 +25,17 @@ print(f"DEBUG: JWT_SECRET_KEY loaded: {app.config['JWT_SECRET_KEY'][:10]}...")
 
 # Initialize extensions
 jwt = JWTManager(app)
-CORS(app, origins=os.getenv('CORS_ORIGINS', 'https://remarkable-amazement-production.up.railway.app').split(','))
+
+# FIXED CORS Configuration - Updated to include your frontend domain
+cors_origins = os.getenv('CORS_ORIGINS', 'https://remarkable-amazement-production.up.railway.app,http://localhost:3000,http://localhost:5173')
+print(f"DEBUG: CORS Origins configured: {cors_origins}")
+
+CORS(app, 
+     origins=cors_origins.split(','),
+     supports_credentials=True,  # Add this if you're sending cookies/auth headers
+     allow_headers=['Content-Type', 'Authorization', 'Access-Control-Allow-Credentials'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+)
 
 # Register blueprint routes
 app.register_blueprint(room_bp, url_prefix='/api/rooms')
@@ -99,7 +109,8 @@ def debug_config():
         'jwt_token_expires': os.getenv('JWT_ACCESS_TOKEN_EXPIRES'),
         'database_url_set': bool(os.getenv('DATABASE_URL')),
         'flask_env': os.getenv('FLASK_ENV'),
-        'cors_origins': os.getenv('CORS_ORIGINS')
+        'cors_origins': os.getenv('CORS_ORIGINS'),
+        'cors_origins_parsed': cors_origins.split(',')
     })
 
 # Prometheus metrics endpoint
@@ -117,6 +128,14 @@ def list_routes():
             'rule': rule.rule
         })
     return jsonify(routes)
+
+# Add a CORS test endpoint
+@app.route('/api/cors-test', methods=['GET', 'OPTIONS'])
+def cors_test():
+    return jsonify({
+        'message': 'CORS is working!',
+        'origin_allowed': True
+    })
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
