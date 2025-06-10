@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Navbar from "./layouts/Navbar";
+import axios from "axios";
 
 function Login() {
   const [password, setPassword] = useState("");
@@ -23,7 +24,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://web-production-f02bf.up.railway.app/https://remarkable-amazement-production.up.railway.app/api/auth/login", {
+      const response = await fetch("https://remarkable-amazement-production.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -31,7 +32,6 @@ function Login() {
           password: password.trim(),
         }),
       });
-
       const data = await response.json();
 
       if (!response.ok) {
