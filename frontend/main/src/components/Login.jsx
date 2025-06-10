@@ -24,7 +24,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://remarkable-amazement-production.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/login", {
+      const response = await fetch("https://web-production-f02bf.up.railway.app/https://remarkable-amazement-production.up.railway.app/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -32,6 +32,7 @@ function Login() {
           password: password.trim(),
         }),
       });
+
       const data = await response.json();
 
       if (!response.ok) {

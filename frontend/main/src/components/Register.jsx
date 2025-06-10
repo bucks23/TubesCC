@@ -30,7 +30,7 @@ function Register() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://remarkable-amazement-production.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/register", {
+      const response = await fetch("https://web-production-f02bf.up.railway.app/https://remarkable-amazement-production.up.railway.app/api/auth/register", {
         method: "POST",
         mode: "cors",
         headers: {
