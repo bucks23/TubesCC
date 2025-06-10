@@ -5,6 +5,7 @@ import Contact from "./components/Contact";
 import Register from "./components/Register";
 import Login from "./components/Login";
 import Booking from "./components/Booking";
+import Payment from "./components/Payment";
 import AdminRoom from "./components/Admin/Room";
 import PrometheusMetrics from "./components/PrometheusMetrics";
 import { ToastContainer } from "react-toastify";
@@ -18,7 +19,8 @@ const App = () => {
           <Route path="/" element={<Home />} />
           <Route path="/room" element={<Room />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/booking" element={<Booking />} />
+          <Route path="/booking/:roomId" element={<Booking />} />
+          <Route path="/payment" element={<Payment />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           {/* Admin */}
