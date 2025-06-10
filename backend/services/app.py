@@ -26,25 +26,26 @@ print(f"DEBUG: JWT_SECRET_KEY loaded: {app.config['JWT_SECRET_KEY'][:10]}...")
 # Initialize extensions
 jwt = JWTManager(app)
 
-# ALTERNATIVE SIMPLER CORS Configuration
-cors_origins = os.getenv('CORS_ORIGINS', 'https://remarkable-amazement-production.up.railway.app')
+# FIXED CORS Configuration
+cors_origins = os.getenv('CORS_ORIGINS', 'https://remarkable-amazement-production.up.railway.app,http://localhost:3000,http://localhost:3001')
 origins_list = [origin.strip() for origin in cors_origins.split(',')]
 print(f"DEBUG: CORS Origins configured: {origins_list}")
 
-# Simple CORS configuration - apply to all routes
+# Enhanced CORS configuration - this should handle all CORS issues
 CORS(app, 
      origins=origins_list,
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-     allow_headers=['Content-Type', 'Authorization'],
+     allow_headers=['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
      supports_credentials=True,
-     automatic_options=True
+     automatic_options=True,
+     expose_headers=['Content-Type', 'Authorization']
 )
 
 # Register blueprint routes
-app.register_blueprint(room_bp, url_prefix='/api/rooms')
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
-app.register_blueprint(booking_bp, url_prefix='/api/booking')
-app.register_blueprint(payment_bp, url_prefix='/api/payment')
+app.register_blueprint(room_bp, url_prefix='/api')  # FIXED: Remove /rooms from prefix
+app.register_blueprint(auth_bp, url_prefix='/api')
+app.register_blueprint(booking_bp, url_prefix='/api')
+app.register_blueprint(payment_bp, url_prefix='/api')
 
 # Enhanced JWT Error handlers with better debugging
 @jwt.expired_token_loader
@@ -139,21 +140,13 @@ def cors_test():
     response = jsonify({
         'message': 'CORS is working!',
         'origin_allowed': True,
-        'headers_received': dict(request.headers)
+        'headers_received': dict(request.headers),
+        'method': request.method
     })
     return response
 
-# Add an after_request handler to ensure CORS headers are set
-@app.after_request
-def after_request(response):
-    from flask import request
-    origin = request.headers.get('Origin')
-    if origin in origins_list:
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-    return response
+# REMOVED: The after_request handler as Flask-CORS should handle this automatically
+# The manual CORS headers can conflict with Flask-CORS
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
