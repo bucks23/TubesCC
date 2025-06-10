@@ -31,6 +31,7 @@ function Register() {
 
     try {
       const response = await axios.post(
+<<<<<<< HEAD
         "https://remarkable-amazement-production.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/register",
         {
           method: "POST",
@@ -45,6 +46,19 @@ function Register() {
           }),
         }
       );
+=======
+        "https://web-production-f02bf.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/register",
+        {
+          username: userName.trim(),
+          password: password.trim(),
+          role: "guest",
+        body: JSON.stringify({
+          username: userName.trim(),
+          password: password.trim(),
+          role: "guest",
+        }),
+      });
+>>>>>>> 2ab6f3b5f879ae6e25c72a50a8fb274bf45107fc
 
       const data = await response.json();
 
