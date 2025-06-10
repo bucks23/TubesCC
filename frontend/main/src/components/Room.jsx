@@ -1,14 +1,15 @@
 import Navbar from "./layouts/Navbar";
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 function Room() {
   const [rooms, setRooms] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    fetch("https://web-production-f02bf.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/rooms")
-      .then((res) => res.json())
-      .then((data) => setRooms(data))
+    axios
+      .get("https://web-production-f02bf.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/rooms")
+      .then((response) => setRooms(response.data))
       .catch((err) => console.error("Gagal fetch data kamar:", err));
   }, []);
 
