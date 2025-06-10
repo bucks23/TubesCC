@@ -26,15 +26,18 @@ print(f"DEBUG: JWT_SECRET_KEY loaded: {app.config['JWT_SECRET_KEY'][:10]}...")
 # Initialize extensions
 jwt = JWTManager(app)
 
-# FIXED CORS Configuration - Updated to include your frontend domain
+# ALTERNATIVE SIMPLER CORS Configuration
 cors_origins = os.getenv('CORS_ORIGINS', 'https://remarkable-amazement-production.up.railway.app')
-print(f"DEBUG: CORS Origins configured: {cors_origins}")
+origins_list = [origin.strip() for origin in cors_origins.split(',')]
+print(f"DEBUG: CORS Origins configured: {origins_list}")
 
+# Simple CORS configuration - apply to all routes
 CORS(app, 
-     origins=cors_origins.split(','),
-     supports_credentials=True,  # Add this if you're sending cookies/auth headers
-     allow_headers=['Content-Type', 'Authorization', 'Access-Control-Allow-Credentials'],
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+     origins=origins_list,
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+     allow_headers=['Content-Type', 'Authorization'],
+     supports_credentials=True,
+     automatic_options=True
 )
 
 # Register blueprint routes
@@ -110,7 +113,7 @@ def debug_config():
         'database_url_set': bool(os.getenv('DATABASE_URL')),
         'flask_env': os.getenv('FLASK_ENV'),
         'cors_origins': os.getenv('CORS_ORIGINS'),
-        'cors_origins_parsed': cors_origins.split(',')
+        'cors_origins_parsed': origins_list
     })
 
 # Prometheus metrics endpoint
@@ -129,13 +132,28 @@ def list_routes():
         })
     return jsonify(routes)
 
-# Add a CORS test endpoint
+# Enhanced CORS test endpoint with headers
 @app.route('/api/cors-test', methods=['GET', 'OPTIONS'])
 def cors_test():
-    return jsonify({
+    from flask import request
+    response = jsonify({
         'message': 'CORS is working!',
-        'origin_allowed': True
+        'origin_allowed': True,
+        'headers_received': dict(request.headers)
     })
+    return response
+
+# Add an after_request handler to ensure CORS headers are set
+@app.after_request
+def after_request(response):
+    from flask import request
+    origin = request.headers.get('Origin')
+    if origin in origins_list:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
