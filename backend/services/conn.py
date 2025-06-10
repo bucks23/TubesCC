@@ -55,16 +55,29 @@ def get_db_connection():
     
     while conn is None and retries < max_retries:
         try:
+            # Method 1: Using parameters (RECOMMENDED)
             conn = psycopg2.connect(
-                host=os.environ.get("DB_HOST", "localhost"),
-                database=os.environ.get("DB_NAME", "hotel_cc"),
-                user=os.environ.get("DB_USER", "hotel_cc"),
-                password=os.environ.get("DB_PASSWORD", "password")
+                host=os.environ.get("DB_HOST", "turntable.proxy.rlwy.net"),
+                port=os.environ.get("DB_PORT", "52503"),
+                database=os.environ.get("DB_NAME", "railway"),
+                user=os.environ.get("DB_USER", "postgres"),
+                password=os.environ.get("DB_PASSWORD", "jUzVOeOdaPbAICxOozhAfCcsGIxCGobL"),
+                sslmode='require'  # Required for Railway
             )
+            print("✅ Connected to database successfully!")
+            
         except psycopg2.OperationalError as e:
             retries += 1
+            print(f"❌ Database connection failed ({retries}/{max_retries})")
+            print(f"Error: {e}")
+            
             if retries >= max_retries:
+                print("🚨 Maximum retries reached. Check your database configuration.")
                 raise  # Re-raise exception after max retries
-            print(f"Database connection failed ({retries}/{max_retries}), retrying in 5 seconds...")
+                
+            print(f"⏳ Retrying in 5 seconds...")
             time.sleep(5) 
+            
     return conn
+
+    
