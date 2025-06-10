@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Navbar from "./layouts/Navbar";
-import axios from "axios";
+
 
 function Login() {
   const [password, setPassword] = useState("");
