@@ -37,11 +37,11 @@ CORS(app,
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 )
 
-# Register blueprint routes
-app.register_blueprint(room_bp, url_prefix='/api/rooms')
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
-app.register_blueprint(booking_bp, url_prefix='/api/booking')
-app.register_blueprint(payment_bp, url_prefix='/api/payment')
+# Register blueprint routes - FIXED: Remove '/api' from url_prefix since it's already in blueprint
+app.register_blueprint(room_bp, url_prefix='/api')
+app.register_blueprint(auth_bp, url_prefix='/api')
+app.register_blueprint(booking_bp, url_prefix='/api')
+app.register_blueprint(payment_bp, url_prefix='/api')
 
 # Enhanced JWT Error handlers with better debugging
 @jwt.expired_token_loader
