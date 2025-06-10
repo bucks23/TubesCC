@@ -33,16 +33,9 @@ function Register() {
       const response = await axios.post(
         "https://remarkable-amazement-production.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/register",
         {
-          method: "POST",
-          mode: "cors",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: userName.trim(),
-            password: password.trim(),
-            role: "guest",
-          }),
+          username: userName.trim(),
+          password: password.trim(),
+          role: "guest",
         }
       );
 

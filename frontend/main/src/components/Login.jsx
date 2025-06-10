@@ -50,10 +50,11 @@ function Login() {
         setPassword("");
         window.dispatchEvent(new Event("user-login"));
 
-        const redirectPath = new URLSearchParams(location.search).get(
-          "redirect"
-        );
-        navigate(redirectPath || "/");
+        if (data.user.role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
       }
     } catch (err) {
       toast.error(err.message || "Terjadi kesalahan saat login", {
