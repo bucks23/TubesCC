@@ -18,6 +18,40 @@ load_dotenv()
 # Create Blueprint
 auth_bp = Blueprint('auth', __name__)
 
+# CORS configuration
+CORS_ORIGINS = [
+    'http://localhost:3000',
+    'https://localhost:3000',
+    'https://web-production-f02bf.up.railway.app',  # Your proxy domain
+    'https://adventurous-motivation-production.up.railway.app',  # Your backend domain
+]
+
+# CORS headers helper function
+def add_cors_headers(response):
+    """Add CORS headers to response"""
+    origin = request.headers.get('Origin')
+    if origin in CORS_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = origin
+    else:
+        response.headers['Access-Control-Allow-Origin'] = '*'
+    
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
+
+# OPTIONS handler for preflight requests
+@auth_bp.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({'status': 'ok'})
+        return add_cors_headers(response)
+
+# Add CORS headers to all responses
+@auth_bp.after_request
+def after_request(response):
+    return add_cors_headers(response)
+
 # Database connection manager using your existing conn.py
 @contextmanager
 def get_db_cursor():
@@ -107,6 +141,19 @@ def get_user_by_id(user_id):
         user = cur.fetchone()
         return dict(user) if user else None
 
+def get_user_with_password(user_id):
+    """Get user with password hash for password change operations"""
+    with get_db_cursor() as conn:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        cur.execute("""
+            SELECT id, username, password, role, created_at
+            FROM users WHERE id = %s
+        """, (user_id,))
+        
+        user = cur.fetchone()
+        return dict(user) if user else None
+
 def verify_password(stored_hash, password):
     """Verify password against hash"""
     return check_password_hash(stored_hash, password)
@@ -131,74 +178,183 @@ def validate_role(role):
     valid_roles = ['guest', 'user', 'admin', 'moderator']
     return role in valid_roles
 
-# Debug Routes
-@auth_bp.route('/debug/check-request', methods=['POST', 'OPTIONS'])
-def debug_check_request():
-    """Debug endpoint to check incoming request"""
+# Debug endpoint for CORS testing
+@auth_bp.route('/debug/cors-test', methods=['GET', 'POST', 'OPTIONS'])
+def cors_test():
+    """Test CORS configuration"""
+    return jsonify({
+        'message': 'CORS test successful',
+        'method': request.method,
+        'origin': request.headers.get('Origin'),
+        'cors_origins': CORS_ORIGINS,
+        'timestamp': datetime.now().isoformat()
+    }), 200
+
+@auth_bp.route('/debug/token-info', methods=['POST', 'OPTIONS'])
+def debug_token_info():
+    """Debug endpoint to analyze any JWT token"""
     try:
-        return jsonify({
-            'method': request.method,
-            'headers': dict(request.headers),
-            'json_data': request.get_json(),
-            'content_type': request.content_type,
-            'origin': request.headers.get('Origin'),
-            'user_agent': request.headers.get('User-Agent'),
-            'timestamp': datetime.now().isoformat()
-        }), 200
+        data = request.get_json()
+        if not data or 'token' not in data:
+            return jsonify({'error': 'Token is required in request body'}), 400
+        
+        token = data['token']
+        
+        # Try to decode without verification first to see the payload
+        try:
+            unverified = pyjwt.decode(token, options={"verify_signature": False})
+            current_time = int(time.time())
+            
+            return jsonify({
+                'token_payload': unverified,
+                'current_timestamp': current_time,
+                'token_exp': unverified.get('exp'),
+                'token_iat': unverified.get('iat'),
+                'is_expired': unverified.get('exp', 0) < current_time,
+                'user_id': unverified.get('sub'),
+                'token_age_seconds': current_time - unverified.get('iat', current_time)
+            }), 200
+            
+        except Exception as e:
+            return jsonify({
+                'error': 'Cannot decode token',
+                'details': str(e)
+            }), 400
+            
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@auth_bp.route('/debug/test-db', methods=['GET'])
-def debug_test_db():
-    """Test database connection and check users table"""
+@auth_bp.route('/debug/verify-token', methods=['POST', 'OPTIONS'])
+def debug_verify_token():
+    """Debug endpoint to verify token with current secret"""
     try:
-        with get_db_cursor() as conn:
-            cur = conn.cursor()
+        data = request.get_json()
+        if not data or 'token' not in data:
+            return jsonify({'error': 'Token is required in request body'}), 400
+        
+        token = data['token']
+        secret_key = current_app.config['JWT_SECRET_KEY']
+        
+        try:
+            # Verify the token with current secret
+            decoded = pyjwt.decode(token, secret_key, algorithms=['HS256'])
             
-            # Test basic connection
-            cur.execute('SELECT 1')
-            connection_test = cur.fetchone()
-            
-            # Check if users table exists
-            cur.execute("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_name = 'users'
-                );
-            """)
-            table_exists = cur.fetchone()[0]
-            
-            # Count users
-            user_count = 0
-            if table_exists:
-                cur.execute('SELECT COUNT(*) FROM users')
-                user_count = cur.fetchone()[0]
+            # Check if user exists
+            user_id = decoded.get('sub')
+            user = get_user_by_id(user_id) if user_id else None
             
             return jsonify({
-                'database_connected': bool(connection_test),
-                'users_table_exists': table_exists,
-                'user_count': user_count,
-                'timestamp': datetime.now().isoformat()
+                'token_valid': True,
+                'decoded_payload': decoded,
+                'user_exists': user is not None,
+                'user_data': format_user_response(user) if user else None,
+                'secret_key_first_10': secret_key[:10]
+            }), 200
+            
+        except pyjwt.ExpiredSignatureError:
+            return jsonify({
+                'token_valid': False,
+                'error': 'Token has expired',
+                'error_type': 'expired'
+            }), 200
+            
+        except pyjwt.InvalidSignatureError:
+            return jsonify({
+                'token_valid': False,
+                'error': 'Invalid token signature - secret key mismatch',
+                'error_type': 'invalid_signature',
+                'secret_key_first_10': secret_key[:10]
+            }), 200
+            
+        except pyjwt.InvalidTokenError as e:
+            return jsonify({
+                'token_valid': False,
+                'error': f'Invalid token: {str(e)}',
+                'error_type': 'invalid_token'
             }), 200
             
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@auth_bp.route('/debug/new-token', methods=['POST', 'OPTIONS'])
+def debug_new_token():
+    """Generate a new token for existing user"""
+    try:
+        data = request.get_json()
+        if not data or 'username' not in data:
+            return jsonify({'error': 'Username is required'}), 400
+        
+        username = data['username'].strip().lower()
+        user = get_user_by_username(username)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Create new token with current secret
+        access_token = create_access_token(identity=str(user['id']))
+        
         return jsonify({
-            'error': str(e),
-            'database_connected': False
-        }), 500
+            'message': 'New token generated',
+            'access_token': access_token,
+            'user': format_user_response(user),
+            'expires_in_seconds': current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds(),
+            'secret_key_first_10': current_app.config['JWT_SECRET_KEY'][:10]
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Enhanced login route with better debugging
+@auth_bp.route('/login-debug', methods=['POST', 'OPTIONS'])
+def login_debug():
+    """Login with detailed debugging information"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Validate input
+        if not data.get('username') or not data.get('password'):
+            return jsonify({'error': 'Username and password are required'}), 400
+        
+        username = data['username'].strip().lower()
+        
+        # Get user by username
+        user = get_user_by_username(username)
+        
+        if not user:
+            return jsonify({'error': 'Invalid credentials'}), 401
+        
+        # Verify password
+        if not verify_password(user['password'], data['password']):
+            return jsonify({'error': 'Invalid credentials'}), 401
+        
+        # Create access token
+        access_token = create_access_token(identity=str(user['id']))
+        
+        return jsonify({
+            'message': 'Login successful',
+            'access_token': access_token,
+            'user': format_user_response(user),
+            'debug_info': {
+                'user_id': user['id'],
+                'username': user['username'],
+                'role': user['role'],
+                'secret_key_first_10': current_app.config['JWT_SECRET_KEY'][:10],
+                'token_expires_in_seconds': current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds()
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"Login debug error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # Main Routes
 @auth_bp.route('/register', methods=['POST', 'OPTIONS'])
 def register():
-    if request.method == 'OPTIONS':
-        return '', 200
-        
     try:
-        print(f"Register request received: {request.method}")
-        print(f"Headers: {dict(request.headers)}")
-        
         data = request.get_json()
-        print(f"Request data: {data}")
         
         if not data:
             return jsonify({'error': 'No data provided'}), 400
@@ -247,19 +403,12 @@ def register():
         return jsonify({'error': 'Database error occurred', 'details': error_message}), 500
     except Exception as e:
         print(f"Unexpected error in register: {e}")
-        return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
+        return jsonify({'error': 'An unexpected error occurred'}), 500
 
 @auth_bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
-    if request.method == 'OPTIONS':
-        return '', 200
-        
     try:
-        print(f"Login request received: {request.method}")
-        print(f"Headers: {dict(request.headers)}")
-        
         data = request.get_json()
-        print(f"Login data: {data}")
         
         if not data:
             return jsonify({'error': 'No data provided'}), 400
@@ -272,21 +421,16 @@ def login():
         
         # Get user by username
         user = get_user_by_username(username)
-        print(f"User found: {bool(user)}")
         
         if not user:
             return jsonify({'error': 'Invalid credentials'}), 401
         
         # Verify password
-        password_valid = verify_password(user['password'], data['password'])
-        print(f"Password valid: {password_valid}")
-        
-        if not password_valid:
+        if not verify_password(user['password'], data['password']):
             return jsonify({'error': 'Invalid credentials'}), 401
         
         # Create access token
         access_token = create_access_token(identity=str(user['id']))
-        print(f"Token created for user ID: {user['id']}")
         
         return jsonify({
             'message': 'Login successful',
@@ -296,12 +440,12 @@ def login():
         
     except psycopg2.Error as e:
         print(f"Database error in login: {e}")
-        return jsonify({'error': 'Database error occurred', 'details': str(e)}), 500
+        return jsonify({'error': 'Database error occurred'}), 500
     except Exception as e:
         print(f"Unexpected error in login: {e}")
-        return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
+        return jsonify({'error': 'An unexpected error occurred'}), 500
 
-@auth_bp.route('/profile', methods=['GET'])
+@auth_bp.route('/profile', methods=['GET', 'OPTIONS'])
 @jwt_required()
 def get_profile():
     try:
@@ -313,12 +457,160 @@ def get_profile():
         
         return jsonify({'user': format_user_response(user)}), 200
         
+    except psycopg2.Error as e:
+        print(f"Database error in get_profile: {e}")
+        return jsonify({'error': 'Database error occurred'}), 500
     except Exception as e:
         print(f"Unexpected error in get_profile: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
-# Initialize database when module is imported
+@auth_bp.route('/profile', methods=['PUT', 'OPTIONS'])
+@jwt_required()
+def update_profile():
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Validate input - only username can be updated
+        if 'username' not in data or not data['username'] or not data['username'].strip():
+            return jsonify({'error': 'Username is required'}), 400
+        
+        username = data['username'].strip().lower()
+        
+        if not validate_username(username):
+            return jsonify({'error': 'Username must be at least 3 characters long and contain only letters, numbers, underscores, and hyphens'}), 400
+        
+        with get_db_cursor() as conn:
+            cur = conn.cursor()
+            # Check if username exists for other users
+            cur.execute("""
+                SELECT id FROM users WHERE username = %s AND id != %s
+            """, (username, current_user_id))
+            if cur.fetchone():
+                return jsonify({'error': 'Username already taken'}), 400
+            
+            # Update username
+            cur.execute("""
+                UPDATE users SET username = %s WHERE id = %s
+            """, (username, current_user_id))
+            conn.commit()
+        
+        return jsonify({'message': 'Username updated successfully'}), 200
+    
+    except psycopg2.Error as e:
+        print(f"Database error in update_profile: {e}")
+        return jsonify({'error': 'Database error occurred'}), 500
+    except Exception as e:
+        print(f"Unexpected error in update_profile: {e}")
+        return jsonify({'error': 'An unexpected error occurred'}), 500
+
+@auth_bp.route('/change-password', methods=['POST', 'OPTIONS'])
+@jwt_required()
+def change_password():
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Validate input fields
+        required_fields = ['old_password', 'new_password']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({'error': f'{field} is required'}), 400
+        
+        if len(data['new_password']) < 6:
+            return jsonify({'error': 'New password must be at least 6 characters long'}), 400
+        
+        # Get user including password hash
+        user = get_user_with_password(current_user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Verify old password
+        if not verify_password(user['password'], data['old_password']):
+            return jsonify({'error': 'Old password is incorrect'}), 401
+        
+        # Hash new password and update
+        new_password_hash = generate_password_hash(data['new_password'])
+        
+        with get_db_cursor() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE users SET password = %s WHERE id = %s
+            """, (new_password_hash, current_user_id))
+            conn.commit()
+        
+        return jsonify({'message': 'Password updated successfully'}), 200
+        
+    except psycopg2.Error as e:
+        print(f"Database error in change_password: {e}")
+        return jsonify({'error': 'Database error occurred'}), 500
+    except Exception as e:
+        print(f"Unexpected error in change_password: {e}")
+        return jsonify({'error': 'An unexpected error occurred'}), 500
+
+@auth_bp.route('/change-role', methods=['POST', 'OPTIONS'])
+@jwt_required()
+def change_role():
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Validate required fields
+        required_fields = ['target_user_id', 'new_role']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'{field} is required'}), 400
+        
+        target_user_id = data['target_user_id']
+        new_role = data['new_role']
+        
+        # Check role validity
+        if not validate_role(new_role):
+            return jsonify({'error': 'Invalid role'}), 400
+        
+        # Only admin can change roles
+        current_user = get_user_by_id(current_user_id)
+        if not current_user or current_user['role'] != 'admin':
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        # Prevent admin from downgrading their own role
+        if target_user_id == current_user_id:
+            return jsonify({'error': 'Admin cannot change own role'}), 403
+        
+        # Check target user exists
+        target_user = get_user_by_id(target_user_id)
+        if not target_user:
+            return jsonify({'error': 'Target user not found'}), 404
+        
+        # Update role
+        with get_db_cursor() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE users SET role = %s WHERE id = %s
+            """, (new_role, target_user_id))
+            conn.commit()
+        
+        return jsonify({'message': 'Role updated successfully'}), 200
+    
+    except psycopg2.Error as e:
+        print(f"Database error in change_role: {e}")
+        return jsonify({'error': 'Database error occurred'}), 500
+    except Exception as e:
+        print(f"Unexpected error in change_role: {e}")
+        return jsonify({'error': 'An unexpected error occurred'}), 500
+
+# Initialize database when blueprint is imported
 try:
     init_db()
+    print("✅ Auth blueprint initialized successfully")
 except Exception as e:
-    print(f"Warning: Could not initialize database: {e}")
+    print(f"⚠️ Warning: Database initialization failed: {e}")
