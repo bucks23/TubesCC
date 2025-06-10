@@ -4,7 +4,7 @@ import Navbar from "./layouts/Navbar";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FiUser, FiLock } from "react-icons/fi";
-import axios from "axios";import axios from "axios";
+import axios from "axios";
 
 function Register() {
   const [password, setPassword] = useState("");
@@ -30,18 +30,21 @@ function Register() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://remarkable-amazement-production.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/register", {
-        method: "POST",
-        mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: userName.trim(),
-          password: password.trim(),
-          role: "guest",
-        }),
-      });
+      const response = await axios.post(
+        "https://remarkable-amazement-production.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/register",
+        {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: userName.trim(),
+            password: password.trim(),
+            role: "guest",
+          }),
+        }
+      );
 
       const data = await response.json();
 

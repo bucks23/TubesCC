@@ -24,18 +24,18 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://remarkable-amazement-production.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const response = await axios.post(
+        "https://remarkable-amazement-production.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/login",
+        {
           username: userName.trim(),
           password: password.trim(),
-        }),
-      });
-      const data = await response.json();
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error(data.error || "Login gagal");
+      const data = response.data;
+
+      if (response.status !== 200) {
+        throw new Error(data.error || "Login failed");
       }
 
       if (data.access_token) {
@@ -49,7 +49,11 @@ function Login() {
         setUserName("");
         setPassword("");
         window.dispatchEvent(new Event("user-login"));
-        navigate("/");
+
+        const redirectPath = new URLSearchParams(location.search).get(
+          "redirect"
+        );
+        navigate(redirectPath || "/");
       }
     } catch (err) {
       toast.error(err.message || "Terjadi kesalahan saat login", {

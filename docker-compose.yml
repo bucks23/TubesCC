@@ -4,7 +4,7 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: be_pacific-up_v1
+    container_name: be_pacific-up_v1.1
     ports:
       - "5000:5000"
     depends_on:
@@ -18,7 +18,7 @@ services:
   frontend:
     build:
       context: ./frontend/main
-    container_name: fe_pacific-up_v2
+    container_name: fe_pacific-up_v2.1
     ports:
       - "3000:80"
     depends_on:
@@ -26,7 +26,7 @@ services:
 
   db:
     image: postgres:12-alpine
-    container_name: db_pacific-up_v1
+    container_name: db_pacific-up_v1.1
     environment:
       - POSTGRES_DB=hotel_cc
       - POSTGRES_USER=hotel_cc

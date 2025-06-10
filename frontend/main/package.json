@@ -1,11 +1,11 @@
 {
   "name": "main",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "proxy": "https://adventurous-motivation-production.up.railway.app",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --force",
     "build": "vite build",
     "preview": "vite preview"
   },

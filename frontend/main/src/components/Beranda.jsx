@@ -14,6 +14,7 @@ import {
   FaMoneyCheckAlt,
   FaMapMarkedAlt,
 } from "react-icons/fa";
+import axios from "axios";
 
 const Landing = () => {
   const [roomTypes, setRoomTypes] = useState([]);
@@ -24,10 +25,12 @@ const Landing = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/rooms/")
-      .then((res) => res.json())
-      .then((data) => setRoomTypes(data))
-      .catch((err) => console.error("Failed to fetch rooms:", err));
+    axios
+      .get(
+        "https://web-production-f02bf.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/rooms"
+      )
+      .then((response) => setRoomTypes(response.data))
+      .catch((error) => console.error("Failed to fetch rooms:", error));
   }, []);
 
   const handleSearch = () => {
