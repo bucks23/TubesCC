@@ -1,3 +1,4 @@
+# auth.py
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,7 +8,9 @@ import psycopg2.extras
 from contextlib import contextmanager
 import os
 from dotenv import load_dotenv
-from .conn import get_db_connection  # Pastikan kamu punya modul conn.py yang berisi fungsi ini
+from .conn import get_db_connection  
+import jwt as pyjwt
+import time
 
 # Load environment variables
 load_dotenv()
@@ -141,6 +144,167 @@ def validate_role(role):
     valid_roles = ['guest', 'user', 'admin', 'moderator']
     return role in valid_roles
 
+
+@auth_bp.route('/debug/token-info', methods=['POST'])
+def debug_token_info():
+    """Debug endpoint to analyze any JWT token"""
+    try:
+        data = request.get_json()
+        if not data or 'token' not in data:
+            return jsonify({'error': 'Token is required in request body'}), 400
+        
+        token = data['token']
+        
+        # Try to decode without verification first to see the payload
+        try:
+            unverified = pyjwt.decode(token, options={"verify_signature": False})
+            current_time = int(time.time())
+            
+            return jsonify({
+                'token_payload': unverified,
+                'current_timestamp': current_time,
+                'token_exp': unverified.get('exp'),
+                'token_iat': unverified.get('iat'),
+                'is_expired': unverified.get('exp', 0) < current_time,
+                'user_id': unverified.get('sub'),
+                'token_age_seconds': current_time - unverified.get('iat', current_time)
+            }), 200
+            
+        except Exception as e:
+            return jsonify({
+                'error': 'Cannot decode token',
+                'details': str(e)
+            }), 400
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@auth_bp.route('/debug/verify-token', methods=['POST'])
+def debug_verify_token():
+    """Debug endpoint to verify token with current secret"""
+    try:
+        data = request.get_json()
+        if not data or 'token' not in data:
+            return jsonify({'error': 'Token is required in request body'}), 400
+        
+        token = data['token']
+        secret_key = current_app.config['JWT_SECRET_KEY']
+        
+        try:
+            # Verify the token with current secret
+            decoded = pyjwt.decode(token, secret_key, algorithms=['HS256'])
+            
+            # Check if user exists
+            user_id = decoded.get('sub')
+            user = get_user_by_id(user_id) if user_id else None
+            
+            return jsonify({
+                'token_valid': True,
+                'decoded_payload': decoded,
+                'user_exists': user is not None,
+                'user_data': format_user_response(user) if user else None,
+                'secret_key_first_10': secret_key[:10]
+            }), 200
+            
+        except pyjwt.ExpiredSignatureError:
+            return jsonify({
+                'token_valid': False,
+                'error': 'Token has expired',
+                'error_type': 'expired'
+            }), 200
+            
+        except pyjwt.InvalidSignatureError:
+            return jsonify({
+                'token_valid': False,
+                'error': 'Invalid token signature - secret key mismatch',
+                'error_type': 'invalid_signature',
+                'secret_key_first_10': secret_key[:10]
+            }), 200
+            
+        except pyjwt.InvalidTokenError as e:
+            return jsonify({
+                'token_valid': False,
+                'error': f'Invalid token: {str(e)}',
+                'error_type': 'invalid_token'
+            }), 200
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@auth_bp.route('/debug/new-token', methods=['POST'])
+def debug_new_token():
+    """Generate a new token for existing user"""
+    try:
+        data = request.get_json()
+        if not data or 'username' not in data:
+            return jsonify({'error': 'Username is required'}), 400
+        
+        username = data['username'].strip().lower()
+        user = get_user_by_username(username)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Create new token with current secret
+        access_token = create_access_token(identity=str(user['id']))
+        
+        return jsonify({
+            'message': 'New token generated',
+            'access_token': access_token,
+            'user': format_user_response(user),
+            'expires_in_seconds': current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds(),
+            'secret_key_first_10': current_app.config['JWT_SECRET_KEY'][:10]
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 3. Enhanced login route with better debugging
+@auth_bp.route('/login-debug', methods=['POST'])
+def login_debug():
+    """Login with detailed debugging information"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Validate input
+        if not data.get('username') or not data.get('password'):
+            return jsonify({'error': 'Username and password are required'}), 400
+        
+        username = data['username'].strip().lower()
+        
+        # Get user by username
+        user = get_user_by_username(username)
+        
+        if not user:
+            return jsonify({'error': 'Invalid credentials'}), 401
+        
+        # Verify password
+        if not verify_password(user['password'], data['password']):
+            return jsonify({'error': 'Invalid credentials'}), 401
+        
+        # Create access token
+        access_token = create_access_token(identity=str(user['id']))
+        
+        return jsonify({
+            'message': 'Login successful',
+            'access_token': access_token,
+            'user': format_user_response(user),
+            'debug_info': {
+                'user_id': user['id'],
+                'username': user['username'],
+                'role': user['role'],
+                'secret_key_first_10': current_app.config['JWT_SECRET_KEY'][:10],
+                'token_expires_in_seconds': current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds()
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"Login debug error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # Routes
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -180,7 +344,7 @@ def register():
             return jsonify({'error': result['error']}), 400
         
         # Create access token
-        access_token = create_access_token(identity=result['id'])
+        access_token = create_access_token(identity=str(result['id']))
         
         return jsonify({
             'message': 'User created successfully',
@@ -221,7 +385,7 @@ def login():
             return jsonify({'error': 'Invalid credentials'}), 401
         
         # Create access token
-        access_token = create_access_token(identity=user['id'])
+        access_token = create_access_token(identity=str(user['id']))
         
         return jsonify({
             'message': 'Login successful',
