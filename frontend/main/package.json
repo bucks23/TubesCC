@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "proxy": "https://adventurous-motivation-production.up.railway.app ",
+  "proxy": "https://adventurous-motivation-production.up.railway.app",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
