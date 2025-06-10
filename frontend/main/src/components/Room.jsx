@@ -8,7 +8,7 @@ function Room() {
 
   useEffect(() => {
     axios
-      .get("https://adventurous-motivation-production.up.railway.app/api/rooms")
+      .get("https://web-production-f02bf.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/rooms")
       .then((response) => setRooms(response.data))
       .catch((err) => console.error("Gagal fetch data kamar:", err));
   }, []);
