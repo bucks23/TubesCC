@@ -25,7 +25,7 @@ print(f"DEBUG: JWT_SECRET_KEY loaded: {app.config['JWT_SECRET_KEY'][:10]}...")
 
 # Initialize extensions
 jwt = JWTManager(app)
-CORS(app, origins=os.getenv('CORS_ORIGINS', 'https://remarkable-amazement-production.up.railway.app',).split(','))
+CORS(app, origins=os.getenv('CORS_ORIGINS', 'https://remarkable-amazement-production.up.railway.app').split(','))
 
 # Register blueprint routes
 app.register_blueprint(room_bp, url_prefix='/api/rooms')
