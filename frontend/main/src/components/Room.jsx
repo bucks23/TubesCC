@@ -6,7 +6,7 @@ function Room() {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    fetch("https://adventurous-motivation-production.up.railway.app/api/rooms")
+    fetch("https://web-production-f02bf.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/rooms")
       .then((res) => res.json())
       .then((data) => setRooms(data))
       .catch((err) => console.error("Gagal fetch data kamar:", err));
