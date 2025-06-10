@@ -124,7 +124,7 @@ function RoomItem({ room }) {
     if (isLoggedIn) {
       navigate("/booking");
     } else {
-      navigate("/booking/" + room.id);
+      navigate("/login");
     }
   };
 
