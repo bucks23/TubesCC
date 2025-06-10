@@ -8,7 +8,7 @@ from services.conn import get_db_connection
 from datetime import timedelta
 from flask_cors import CORS
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # Add this import
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter
 
 # Load environment variables BEFORE creating the app
@@ -25,27 +25,13 @@ print(f"DEBUG: JWT_SECRET_KEY loaded: {app.config['JWT_SECRET_KEY'][:10]}...")
 
 # Initialize extensions
 jwt = JWTManager(app)
-
-# FIXED CORS Configuration
-cors_origins = os.getenv('CORS_ORIGINS', 'https://remarkable-amazement-production.up.railway.app,http://localhost:3000,http://localhost:3001')
-origins_list = [origin.strip() for origin in cors_origins.split(',')]
-print(f"DEBUG: CORS Origins configured: {origins_list}")
-
-# Enhanced CORS configuration - this should handle all CORS issues
-CORS(app, 
-     origins=origins_list,
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-     allow_headers=['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
-     supports_credentials=True,
-     automatic_options=True,
-     expose_headers=['Content-Type', 'Authorization']
-)
+CORS(app, origins=os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(','))
 
 # Register blueprint routes
-app.register_blueprint(room_bp, url_prefix='/api')  # FIXED: Remove /rooms from prefix
-app.register_blueprint(auth_bp, url_prefix='/api')
-app.register_blueprint(booking_bp, url_prefix='/api')
-app.register_blueprint(payment_bp, url_prefix='/api')
+app.register_blueprint(room_bp, url_prefix='/api/rooms')
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(booking_bp, url_prefix='/api/booking')
+app.register_blueprint(payment_bp, url_prefix='/api/payment')
 
 # Enhanced JWT Error handlers with better debugging
 @jwt.expired_token_loader
@@ -113,8 +99,7 @@ def debug_config():
         'jwt_token_expires': os.getenv('JWT_ACCESS_TOKEN_EXPIRES'),
         'database_url_set': bool(os.getenv('DATABASE_URL')),
         'flask_env': os.getenv('FLASK_ENV'),
-        'cors_origins': os.getenv('CORS_ORIGINS'),
-        'cors_origins_parsed': origins_list
+        'cors_origins': os.getenv('CORS_ORIGINS')
     })
 
 # Prometheus metrics endpoint
@@ -132,21 +117,6 @@ def list_routes():
             'rule': rule.rule
         })
     return jsonify(routes)
-
-# Enhanced CORS test endpoint with headers
-@app.route('/api/cors-test', methods=['GET', 'OPTIONS'])
-def cors_test():
-    from flask import request
-    response = jsonify({
-        'message': 'CORS is working!',
-        'origin_allowed': True,
-        'headers_received': dict(request.headers),
-        'method': request.method
-    })
-    return response
-
-# REMOVED: The after_request handler as Flask-CORS should handle this automatically
-# The manual CORS headers can conflict with Flask-CORS
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
