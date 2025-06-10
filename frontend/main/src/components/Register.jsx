@@ -31,7 +31,7 @@ function Register() {
 
     try {
       const response = await axios.post(
-        "https://web-production-f02bf.up.railway.app/https://remarkable-amazement-production.up.railway.app/register",
+        "https://web-production-f02bf.up.railway.app/https://remarkable-amazement-production.up.railway.app/auth/register",
         {
           username: userName.trim(),
           password: password.trim(),
