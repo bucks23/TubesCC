@@ -25,13 +25,27 @@ print(f"DEBUG: JWT_SECRET_KEY loaded: {app.config['JWT_SECRET_KEY'][:10]}...")
 
 # Initialize extensions
 jwt = JWTManager(app)
-CORS(app, origins=os.getenv('CORS_ORIGINS', 'https://remarkable-amazement-production.up.railway.app').split(','))
 
-# Register blueprint routes
-app.register_blueprint(room_bp, url_prefix='/api/rooms')
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
-app.register_blueprint(booking_bp, url_prefix='/api/booking')
-app.register_blueprint(payment_bp, url_prefix='/api/payment')
+# FIXED CORS Configuration
+default_origins = 'http://localhost:3000,http://localhost:5173,https://remarkable-amazement-production.up.railway.app'
+cors_origins = os.getenv('CORS_ORIGINS', default_origins).split(',')
+
+# Strip whitespace from origins
+cors_origins = [origin.strip() for origin in cors_origins]
+
+print(f"DEBUG: CORS Origins: {cors_origins}")
+
+CORS(app, 
+     origins=cors_origins,
+     allow_headers=['Content-Type', 'Authorization'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+     supports_credentials=True)
+
+# Register blueprint routes - FIXED: Remove '/api' from url_prefix since it's already in blueprint
+app.register_blueprint(room_bp, url_prefix='/api')
+app.register_blueprint(auth_bp, url_prefix='/api')
+app.register_blueprint(booking_bp, url_prefix='/api')
+app.register_blueprint(payment_bp, url_prefix='/api')
 
 # Enhanced JWT Error handlers with better debugging
 @jwt.expired_token_loader
@@ -99,7 +113,8 @@ def debug_config():
         'jwt_token_expires': os.getenv('JWT_ACCESS_TOKEN_EXPIRES'),
         'database_url_set': bool(os.getenv('DATABASE_URL')),
         'flask_env': os.getenv('FLASK_ENV'),
-        'cors_origins': os.getenv('CORS_ORIGINS')
+        'cors_origins': os.getenv('CORS_ORIGINS'),
+        'parsed_cors_origins': cors_origins
     })
 
 # Prometheus metrics endpoint
@@ -117,6 +132,17 @@ def list_routes():
             'rule': rule.rule
         })
     return jsonify(routes)
+
+# Add manual CORS headers for extra safety
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin in cors_origins:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+        response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
