@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Sidebar from "./layouts/sidebar";
+import Sidebar from "./layouts/Sidebar";
 import {
   FaEdit,
   FaTrash,
   FaSortNumericDown,
   FaSortNumericUp,
 } from "react-icons/fa";
+
 
 const BookingsTable = () => {
   const [bookings, setBookings] = useState([]);

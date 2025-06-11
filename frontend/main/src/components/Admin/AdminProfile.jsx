@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Sidebar from "./layouts/sidebar";
+import Sidebar from "./layouts/Sidebar";
 import axios from "axios";
 
 const AdminProfile = () => {
