@@ -64,7 +64,7 @@ function Login() {
         setPassword("");
         window.dispatchEvent(new Event("user-login"));
 
-        if (data.user.role === "admin") {
+        if (data.user.role == "admin") {
           navigate("/admin");
         } else {
           navigate("/");
