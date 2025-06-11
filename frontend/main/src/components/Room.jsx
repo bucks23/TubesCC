@@ -116,16 +116,11 @@ function Room() {
 
 function RoomItem({ room }) {
   const navigate = useNavigate();
-  const isLoggedIn = !!localStorage.getItem("token");
 
   const handleBookingClick = () => {
     if (room.status !== "Available") return;
 
-    if (isLoggedIn) {
-      navigate("/booking");
-    } else {
-      navigate("/login");
-    }
+    navigate("/booking");
   };
 
   return (
