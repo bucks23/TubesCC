@@ -425,7 +425,7 @@ def get_profile():
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
     
-@auth_bp.route('/admin/users', methods=['POST'])
+@auth_bp.route('/admin/users', methods=['GET'])
 @jwt_required()
 def get_users():
     try:
