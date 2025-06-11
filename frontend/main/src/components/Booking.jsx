@@ -4,7 +4,7 @@ import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 
 function Booking() {
-  const { roomType } = useParams();
+  const { roomId } = useParams();
   const navigate = useNavigate();
   const [room, setRoom] = useState(null);
   const [user, setUser] = useState(null);
@@ -21,7 +21,7 @@ function Booking() {
       setError(null);
       try {
         const response = await axios.get(
-          `https://web-production-f02bf.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/rooms/${roomType}`
+          `https://web-production-f02bf.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/rooms/${roomId}`
         );
         setRoom(response.data);
       } catch (err) {
@@ -38,7 +38,7 @@ function Booking() {
     }
 
     fetchRoom();
-  }, [roomType]);
+  }, [roomId]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
