@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Home from "./components/Admin/Home";
+import HomePublic from "./components/Home";
 import Room from "./components/Room";
 import Contact from "./components/Contact";
 import Register from "./components/Register";
@@ -21,7 +22,7 @@ const App = () => {
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<HomePublic />} />
           <Route path="/room" element={<Room />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/booking/:roomId" element={<Booking />} />

@@ -2,7 +2,7 @@ import Navbar from "./layouts/Navbar";
 import Beranda from "./Beranda";
 import Footer from "./layouts/Footer";
 
-const Home = () => {
+const HomePublic = () => {
   return (
     <div>
       <Navbar />
@@ -12,4 +12,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default HomePublic;
