@@ -48,7 +48,7 @@ function Login() {
 
       // If you want to be extra sure about the role comparison:
       console.log("Is admin?", data.user.role === "admin");
-      console.log("Role comparison result:", data.user.role === "admin" ? "admin" : "user");
+      console.log("Role comparison result:", data.user.role === "admin" ? "admin" : "guest");
 
       if (data.access_token) {
         localStorage.setItem("access_token", data.access_token);
