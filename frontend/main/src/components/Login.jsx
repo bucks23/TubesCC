@@ -37,6 +37,18 @@ function Login() {
       if (response.status !== 200) {
         throw new Error(data.error || "Login failed");
       }
+      console.log("Full API response:", response.data);
+      console.log("User data:", data.user);
+      console.log("User role:", data.user.role);
+      console.log("User role type:", typeof data.user.role);
+      console.log("Access token:", data.access_token);
+
+      // Also add this to check what's stored in localStorage
+      console.log("Stored user data:", JSON.parse(localStorage.getItem("user")));
+
+      // If you want to be extra sure about the role comparison:
+      console.log("Is admin?", data.user.role === "admin");
+      console.log("Role comparison result:", data.user.role === "admin" ? "admin" : "user");
 
       if (data.access_token) {
         localStorage.setItem("access_token", data.access_token);
