@@ -39,9 +39,11 @@ function Register() {
         }
       );
 
-      const data = await response.json();
+      // Fix: axios automatically parses JSON, so use response.data instead of response.json()
+      const data = response.data;
 
-      if (!response.ok) {
+      // Fix: axios doesn't have response.ok, check status code instead
+      if (response.status < 200 || response.status >= 300) {
         throw new Error(
           data.error || `Registration failed: ${response.status}`
         );
@@ -60,7 +62,17 @@ function Register() {
         navigate("/login");
       }, 3000);
     } catch (err) {
-      toast.error(err.message);
+      // Handle axios errors properly
+      if (err.response) {
+        // Server responded with error status
+        toast.error(err.response.data?.error || err.response.data?.message || `Error: ${err.response.status}`);
+      } else if (err.request) {
+        // Network error
+        toast.error("Network error. Please check your connection.");
+      } else {
+        // Other error
+        toast.error(err.message);
+      }
     } finally {
       setLoading(false);
     }
