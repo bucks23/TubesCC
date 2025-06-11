@@ -28,6 +28,29 @@ def get_rooms():
     ]
     return jsonify(rooms)
 
+@room_bp.route('/<int:room_id>', methods=['GET'])
+def get_room_by_id(room_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, room_number, room_type, price, status, description FROM rooms WHERE id = %s;", (room_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if row is None:
+        return jsonify({"error": "Room not found"}), 404
+
+    room = {
+        "id": row[0],
+        "room_number": row[1],
+        "room_type": row[2],
+        "price": row[3],
+        "status": row[4],
+        "description": row[5]
+    }
+    return jsonify(room)
+
+
 # Endpoint untuk menambahkan kamar baru
 @room_bp.route('/', methods=['POST'])
 def create_room():
