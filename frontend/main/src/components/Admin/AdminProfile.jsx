@@ -8,7 +8,7 @@ const AdminProfile = () => {
 
   const fetchAdminProfile = async () => {
     try {
-      const token = localStorage.getItem("token"); // sesuaikan jika pakai penyimpanan lain
+      const token = localStorage.getItem("token");
       const response = await axios.get(
         "https://web-production-f02bf.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/profile",
         {
