@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "./layouts/Navbar";
+import { toast } from "react-toastify";
 
 const Payment = () => {
   const location = useLocation();
@@ -33,12 +34,17 @@ const Payment = () => {
   const handlePayment = (e) => {
     e.preventDefault();
     if (!cardNumber || cardNumber.length < 19) {
-      return alert("Masukkan nomor kartu kredit yang valid!");
+      return toast.error("Masukkan nomor kartu kredit yang valid!", {
+        position: "top-center",
+        autoClose: 3000,
+      });
     }
 
-    // Simulasi pembayaran
-    alert("Pembayaran berhasil!");
-    navigate("/"); // atau redirect ke halaman sukses
+    toast.success("Pembayaran berhasil!", {
+      position: "top-center",
+      autoClose: 3000,
+      onClose: () => navigate("/"),
+    });
   };
 
   return (
