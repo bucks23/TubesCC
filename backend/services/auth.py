@@ -1,3 +1,4 @@
+# auth.py
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -17,7 +18,7 @@ load_dotenv()
 # Create Blueprint
 auth_bp = Blueprint('auth', __name__)
 
-# Database connection manager using your existing conn.py
+# Database connection manager using conn.py
 @contextmanager
 def get_db_cursor():
     conn = None
@@ -55,27 +56,28 @@ def init_db():
         
         conn.commit()
         print("Database initialized successfully")
-
 def create_user(username, password, role='guest'):
     """Create a new user"""
-    password_hash = generate_password_hash(password)
+    password_hash = generate_password_hash(password)  # Hash the password for security
     
     with get_db_cursor() as conn:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         try:
+            # Insert new user information into the database
             cur.execute("""
                 INSERT INTO users (username, password, role)
                 VALUES (%s, %s, %s)
                 RETURNING id, username, role, created_at
             """, (username, password_hash, role))
             
-            user = dict(cur.fetchone())
-            conn.commit()
-            return user
+            user = dict(cur.fetchone())  # Retrieve and convert the result to a dictionary
+            conn.commit()  # Commit the transaction
+            return user  # Return the created user information
             
         except psycopg2.IntegrityError as e:
-            conn.rollback()
+            conn.rollback()  # Rollback in case of an error
+            # Handle duplicate username error
             if 'username' in str(e):
                 return {'error': 'Username already exists'}
             return {'error': 'User already exists'}
@@ -85,63 +87,67 @@ def get_user_by_username(username):
     with get_db_cursor() as conn:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
+        # Query user information by username
         cur.execute("""
             SELECT id, username, password, role, created_at
             FROM users WHERE username = %s
         """, (username,))
         
-        user = cur.fetchone()
-        return dict(user) if user else None
+        user = cur.fetchone()  # Fetch the user data
+        return dict(user) if user else None  # Convert to dictionary or return None
 
 def get_user_by_id(user_id):
     """Get user by ID"""
     with get_db_cursor() as conn:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
+        # Query user information by user ID
         cur.execute("""
             SELECT id, username, role, created_at
             FROM users WHERE id = %s
         """, (user_id,))
         
-        user = cur.fetchone()
-        return dict(user) if user else None
+        user = cur.fetchone()  # Fetch the user data
+        return dict(user) if user else None  # Convert to dictionary or return None
 
 def get_user_with_password(user_id):
     """Get user with password hash for password change operations"""
     with get_db_cursor() as conn:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
+        # Query user information including password hash by user ID
         cur.execute("""
             SELECT id, username, password, role, created_at
             FROM users WHERE id = %s
         """, (user_id,))
         
-        user = cur.fetchone()
-        return dict(user) if user else None
+        user = cur.fetchone()  # Fetch the user data
+        return dict(user) if user else None  # Convert to dictionary or return None
 
 def verify_password(stored_hash, password):
     """Verify password against hash"""
-    return check_password_hash(stored_hash, password)
+    return check_password_hash(stored_hash, password)  # Compare password with stored hash
 
 # Helper functions
 def format_user_response(user):
     """Format user data for API response"""
     if 'password' in user:
-        del user['password']
+        del user['password']  # Remove password from the user data
     
     if 'created_at' in user and user['created_at']:
-        user['created_at'] = user['created_at'].isoformat()
+        user['created_at'] = user['created_at'].isoformat()  # Convert date to ISO format
     
-    return user
+    return user  # Return formatted user data
 
 def validate_username(username):
     """Username validation"""
+    # Validate username length and allowed characters
     return len(username) >= 3 and username.replace('_', '').replace('-', '').isalnum()
 
 def validate_role(role):
     """Role validation"""
-    valid_roles = ['guest', 'user', 'admin', 'moderator']
-    return role in valid_roles
+    valid_roles = ['guest', 'user', 'admin', 'moderator']  # Define valid roles
+    return role in valid_roles  # Check if role is valid
 
 
 @auth_bp.route('/debug/token-info', methods=['POST'])
@@ -418,6 +424,34 @@ def get_profile():
         print(f"Unexpected error in get_profile: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
+    
+@auth_bp.route('/admin/users', methods=['GET'])
+@jwt_required()
+def get_users():
+    try:
+        current_user_id = get_jwt_identity()
+        current_user = get_user_by_id(current_user_id)
+        
+        if not current_user or current_user['role'] != 'admin':
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        with get_db_cursor() as conn:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute("SELECT id, username, role, created_at FROM users")
+            users = cur.fetchall()
+        
+        # Format user data
+        formatted_users = [format_user_response(user) for user in users]
+        
+        return jsonify({'users': formatted_users}), 200
+        
+    except psycopg2.Error as e:
+        print(f"Database error in get_users: {e}")
+        return jsonify({'error': 'Database error occurred'}), 500
+    except Exception as e:
+        print(f"Unexpected error in get_users: {e}")
+        return jsonify({'error': 'An unexpected error occurred'}), 500
+
 @auth_bp.route('/profile', methods=['PUT'])
 @jwt_required()
 def update_profile():
@@ -561,3 +595,4 @@ def change_role():
     except Exception as e:
         print(f"Unexpected error in change_role: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
+
