@@ -34,7 +34,9 @@ function Login() {
 
       const data = response.data;
 
-      if (response.status !== 200) {
+      // Axios automatically throws for status codes outside 2xx range
+      // So we don't need to check response.status here, but we can keep it for extra safety
+      if (response.status < 200 || response.status >= 300) {
         throw new Error(data.error || "Login failed");
       }
 
@@ -57,12 +59,38 @@ function Login() {
         }
       }
     } catch (err) {
-      toast.error(err.message || "Terjadi kesalahan saat login", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      // Improved error handling for axios
+      if (err.response) {
+        // Server responded with error status (4xx, 5xx)
+        const errorMessage = err.response.data?.error || 
+                           err.response.data?.message || 
+                           "Username atau password salah";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else if (err.request) {
+        // Network error - no response received
+        toast.error("Tidak dapat terhubung ke server. Periksa koneksi internet Anda.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        // Other error
+        toast.error(err.message || "Terjadi kesalahan saat login", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Add Enter key support for better UX
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !loading) {
+      handleLogin();
     }
   };
 
@@ -91,6 +119,7 @@ function Login() {
                   placeholder="Masukkan username"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   disabled={loading}
                 />
               </div>
@@ -103,6 +132,7 @@ function Login() {
                   placeholder="Masukkan password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   disabled={loading}
                 />
               </div>
