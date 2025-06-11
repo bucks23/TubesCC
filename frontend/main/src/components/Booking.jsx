@@ -81,9 +81,10 @@ function Booking() {
       navigate("/payment", {
         state: {
           username: user.username,
-          room_type: room.room_type,
-          jumlahHari: diffDays,
-          totalHarga: total,
+          roomType: room.room_type,
+          price: room.price,
+          days: diffDays,
+          total: total,
         },
       });
     } catch (err) {
