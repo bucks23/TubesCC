@@ -22,7 +22,6 @@ function Login() {
     }
 
     setLoading(true);
-    console.log("Starting login process for user:", userName);
 
     try {
       const response = await axios.post(
@@ -33,92 +32,39 @@ function Login() {
         }
       );
 
-      console.log("Login response received:", response);
-      console.log("Response status:", response.status);
-      console.log("Response data:", response.data);
-
       const data = response.data;
 
-      // Axios automatically throws for status codes outside 2xx range
-      // So we don't need to check response.status here, but we can keep it for extra safety
-      if (response.status < 200 || response.status >= 300) {
+      if (response.status !== 200) {
         throw new Error(data.error || "Login failed");
       }
 
       if (data.access_token) {
-        console.log("Access token received:", data.access_token);
-        console.log("User data from server:", data.user);
-        console.log("User role:", data.user.role);
-        console.log("User role type:", typeof data.user.role);
-
         localStorage.setItem("access_token", data.access_token);
         localStorage.setItem("user", JSON.stringify(data.user));
-        
-        console.log("Data stored in localStorage:");
-        console.log("- access_token:", localStorage.getItem("access_token"));
-        console.log("- user:", localStorage.getItem("user"));
-        
         toast.success("Login berhasil!", {
           position: "top-right",
           autoClose: 3000,
         });
+        console.log("User data:", data.user);
+        console.log("Access token:", data.access_token);
 
         setUserName("");
         setPassword("");
         window.dispatchEvent(new Event("user-login"));
 
-        console.log("Checking user role for navigation...");
         if (data.user.role === "admin") {
-          console.log("User is admin - redirecting to /admin");
           navigate("/admin");
         } else {
-          console.log("User is not admin (role:", data.user.role, ") - redirecting to /");
           navigate("/");
         }
-      } else {
-        console.log("No access token in response");
       }
     } catch (err) {
-      console.error("Login error:", err);
-      console.error("Error response:", err.response);
-      console.error("Error message:", err.message);
-      
-      // Improved error handling for axios
-      if (err.response) {
-        // Server responded with error status (4xx, 5xx)
-        console.log("Server error response data:", err.response.data);
-        const errorMessage = err.response.data?.error || 
-                           err.response.data?.message || 
-                           "Username atau password salah";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      } else if (err.request) {
-        // Network error - no response received
-        console.log("Network error - no response received");
-        toast.error("Tidak dapat terhubung ke server. Periksa koneksi internet Anda.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      } else {
-        // Other error
-        console.log("Other error:", err.message);
-        toast.error(err.message || "Terjadi kesalahan saat login", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
+      toast.error(err.message || "Terjadi kesalahan saat login", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     } finally {
       setLoading(false);
-      console.log("Login process completed");
-    }
-  };
-
-  // Add Enter key support for better UX
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !loading) {
-      handleLogin();
     }
   };
 
@@ -147,7 +93,6 @@ function Login() {
                   placeholder="Masukkan username"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
-                  onKeyPress={handleKeyPress}
                   disabled={loading}
                 />
               </div>
@@ -160,7 +105,6 @@ function Login() {
                   placeholder="Masukkan password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onKeyPress={handleKeyPress}
                   disabled={loading}
                 />
               </div>

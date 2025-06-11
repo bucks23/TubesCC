@@ -10,7 +10,7 @@ const AdminProfile = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        "https://web-production-f02bf.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/auth/profile",
+        "https://adventurous-motivation-production.up.railway.app/api/auth/profile",
         {
           headers: {
             Authorization: `Bearer ${token}`,
