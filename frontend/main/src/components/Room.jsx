@@ -120,7 +120,7 @@ function RoomItem({ room }) {
   const handleBookingClick = () => {
     if (room.status !== "Available") return;
 
-    navigate("/booking/" + room.id);
+    navigate("/booking/" + room.room_type);
   };
 
   return (
