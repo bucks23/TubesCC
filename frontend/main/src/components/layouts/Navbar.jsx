@@ -42,7 +42,7 @@ function Navbar() {
         return;
       }
 
-      const response = await fetch("http://localhost:5000/api/auth/profile", {
+      const response = await fetch("https://adventurous-motivation-production.up.railway.app/api/auth/profile", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,

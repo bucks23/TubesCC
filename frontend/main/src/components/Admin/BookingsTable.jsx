@@ -20,7 +20,7 @@ const BookingsTable = () => {
   const fetchBookings = async () => {
     try {
       const response = await axios.get(
-        "https://adventurous-motivation-production.up.railway.app/api/booking"
+        "https://web-production-f02bf.up.railway.app/https://adventurous-motivation-production.up.railway.app/api/booking"
       );
       setBookings(response.data);
       setDisplayedBookings(response.data);
